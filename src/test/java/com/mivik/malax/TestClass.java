@@ -2,9 +2,14 @@ package com.mivik.malax;
 
 import java.util.Random;
 
-public class MainClass {
+public class TestClass {
 	public static void main(String[] args) {
-		Document doc = new Document("qw\n012345\ned");
+		UndoableDocument doc = new UndoableDocument("qw\n012345\ned");
+		doc.deleteChars(5, 4);
+		System.out.println(doc);
+		System.out.println("=================");
+		doc.undo();
+		System.out.println(doc);
 	}
 
 	private static void DocumentBenchmark() {

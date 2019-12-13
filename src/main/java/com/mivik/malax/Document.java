@@ -1,5 +1,6 @@
 package com.mivik.malax;
 
+import java.nio.CharBuffer;
 import java.util.Arrays;
 
 public class Document {
@@ -15,7 +16,7 @@ public class Document {
 	}
 
 	public Document() {
-		clear();
+		_clear();
 	}
 
 	public Document(CharSequence cs) {
@@ -31,19 +32,19 @@ public class Document {
 	}
 
 	public Document(char[] cs, int off, int len) {
-		clear();
-		insertChars(0, cs, off, len);
+		_clear();
+		_insertChars(getBeginCursor(), cs, off, len);
 	}
 
 	public String substring(Cursor st, int len) {
 		ensureCursor(st);
-		StringBuffer ret = new StringBuffer();
+		StringBuilder ret = new StringBuilder();
 		int line = st.line;
 		int col = st.column;
 		SplayTree.SplayNode cur = L.getKth(line);
 		while (len > cur.val - col) {
 			len -= cur.val - col;
-			ret.append(S[line], col, cur.val);
+			ret.append(S[line], col, cur.val - col);
 			cur = cur.successor();
 			++line;
 			if (line == L.size()) return ret.toString();
@@ -59,7 +60,7 @@ public class Document {
 		final Cursor en = range.end;
 		if (st.line == en.line) return new String(S[st.line], st.column, en.column - st.column);
 		else {
-			StringBuffer ret = new StringBuffer();
+			StringBuilder ret = new StringBuilder();
 			SplayTree.SplayNode cur = L.getKth(st.line);
 			ret.append(S[st.line], st.column, cur.val - st.column);
 			cur = cur.successor();
@@ -70,13 +71,6 @@ public class Document {
 			ret.append(S[en.line], 0, en.column);
 			return ret.toString();
 		}
-	}
-
-	public void clear() {
-		L.clear();
-		L.append(0);
-		S = new char[LINE_BUFFER_SIZE][];
-		S[0] = new char[0];
 	}
 
 	public SplayTree getLineTree() {
@@ -131,11 +125,99 @@ public class Document {
 		return S[x];
 	}
 
-	public void deleteChars(int x, int len) {
-		deleteChars(Index2Cursor(x), len);
+	public void clear() {
+		_clear();
 	}
 
-	public void deleteChars(Cursor en, int len) {
+	public void deleteChars(int x, int len) {
+		_deleteChars(Index2Cursor(x), len);
+	}
+
+	public void deleteChar(int x) {
+		_deleteChar(Index2Cursor(x));
+	}
+
+	public void append(CharSequence s) {
+		_insertChars(getEndCursor(), CharSequence2CharArray(s), 0, s.length());
+	}
+
+	public void appendChar(char c) {
+		_insertChar(getEndCursor(), c);
+	}
+
+	public void appendChars(char[] cs) {
+		_insertChars(getEndCursor(), cs, 0, cs.length);
+	}
+
+	public void appendChars(char[] cs, int off) {
+		_insertChars(getEndCursor(), cs, off, cs.length - off);
+	}
+
+	public void appendChars(char[] cs, int off, int len) {
+		_insertChars(getEndCursor(), cs, off, len);
+	}
+
+	public void insert(int x, CharSequence s) {
+		_insertChars(Index2Cursor(x), CharSequence2CharArray(s), 0, s.length());
+	}
+
+	public void insertChars(int x, char[] cs) {
+		_insertChars(Index2Cursor(x), cs, 0, cs.length);
+	}
+
+	public void insertChars(int x, char[] cs, int off) {
+		_insertChars(Index2Cursor(x), cs, off, cs.length - off);
+	}
+
+	public void insertChars(int x, char[] cs, int off, int len) {
+		_insertChars(Index2Cursor(x), cs, off, len);
+	}
+
+	public void insert(Cursor x, String s) {
+		_insertChars(x, s.toCharArray(), 0, s.length());
+	}
+
+	public void insertChars(Cursor x, char[] cs) {
+		_insertChars(x, cs, 0, cs.length);
+	}
+
+	public void insertChars(Cursor x, char[] cs, int off) {
+		_insertChars(x, cs, off, cs.length - off);
+	}
+
+	public void insertChar(int x, char c) {
+		_insertChar(Index2Cursor(x), c);
+	}
+
+	public void _clear() {
+		L.clear();
+		L.append(0);
+		S = new char[LINE_BUFFER_SIZE][];
+		S[0] = new char[0];
+	}
+
+	protected void _deleteChar(Cursor x) {
+		if (x.line == 0 && x.column == 0) return;
+		ensureCursor(x);
+		moveLeft(x);
+		final int line = x.line;
+		int oriLen = L.get(line);
+		final int col = Math.min(x.column, oriLen);
+		if (S[line][col] == '\n') {
+			int nxtLen = L.get(line + 1);
+			L.set(line, oriLen + nxtLen - 1);
+			L.remove(line + 1);
+			ensureStringCapture(line, col + nxtLen);
+			System.arraycopy(S[line + 1], 0, S[line], col, nxtLen);
+			for (int i = line + 1; i < L.size(); i++) S[i] = S[i + 1];
+		} else {
+			L.set(line, oriLen - 1);
+			char[] s = S[line];
+			for (int i = col + 1; i < oriLen; i++) s[i - 1] = s[i];
+		}
+	}
+
+	protected void _deleteChars(Cursor en, int len) {
 		if (en.line == 0 && en.column == 0) return;
 		ensureCursor(en);
 		moveLeft(en);
@@ -158,79 +240,33 @@ public class Document {
 		}
 	}
 
-	public void deleteChar(int x) {
-		deleteChar(Index2Cursor(x));
-	}
-
-	public void deleteChar(Cursor x) {
-		if (x.line == 0 && x.column == 0) return;
+	protected void _insertChar(Cursor x, char c) {
 		ensureCursor(x);
-		moveLeft(x);
-		final int line = x.line;
-		int oriLen = L.get(line);
-		final int col = Math.min(x.column, oriLen);
-		if (S[line][col] == '\n') {
-			int nxtLen = L.get(line + 1);
-			L.set(line, oriLen + nxtLen - 1);
-			L.remove(line + 1);
-			ensureStringCapture(line, col + nxtLen);
-			System.arraycopy(S[line + 1], 0, S[line], col, nxtLen);
-			for (int i = line + 1; i < L.size(); i++) S[i] = S[i + 1];
+		int len = L.get(x.line);
+		int col = Math.min(x.column, len);
+		if (c == '\n') {
+			ensureLineCapture(L.size() + 1);
+			L.set(x.line, col + 1);
+			int cur = x.line + 1;
+			int nl = len - col;
+			L.insert(cur, nl);
+			for (int i = L.size() - 1; i > cur; i--) S[i] = S[i - 1];
+			S[cur] = Arrays.copyOfRange(S[x.line], col, len);
+			ensureStringCapture(x.line, col + 1);
+			S[x.line][col] = '\n';
 		} else {
-			L.set(line, oriLen - 1);
-			char[] s = S[line];
-			for (int i = col + 1; i < oriLen; i++) s[i - 1] = s[i];
+			L.set(x.line, ++len);
+			ensureStringCapture(x.line, len);
+			char[] s = S[x.line];
+			for (int i = len - 1; i > col; i--) s[i] = s[i - 1];
+			s[col] = c;
 		}
 	}
 
-	public void append(CharSequence s) {
-		insertChars(getEndCursor(), CharSequence2CharArray(s), 0, s.length());
-	}
-
-	public void append(char[] cs) {
-		insertChars(getEndCursor(), cs, 0, cs.length);
-	}
-
-	public void append(char[] cs, int off) {
-		insertChars(getEndCursor(), cs, off, cs.length - off);
-	}
-
-	public void append(char[] cs, int off, int len) {
-		insertChars(getEndCursor(), cs, off, len);
-	}
-
-	public void insert(int x, CharSequence s) {
-		insertChars(Index2Cursor(x), CharSequence2CharArray(s), 0, s.length());
-	}
-
-	public void insertChars(int x, char[] cs) {
-		insertChars(Index2Cursor(x), cs, 0, cs.length);
-	}
-
-	public void insertChars(int x, char[] cs, int off) {
-		insertChars(Index2Cursor(x), cs, off, cs.length - off);
-	}
-
-	public void insertChars(int x, char[] cs, int off, int len) {
-		insertChars(Index2Cursor(x), cs, off, len);
-	}
-
-	public void insert(Cursor x, String s) {
-		insertChars(x, s.toCharArray(), 0, s.length());
-	}
-
-	public void insertChars(Cursor x, char[] cs) {
-		insertChars(x, cs, 0, cs.length);
-	}
-
-	public void insertChars(Cursor x, char[] cs, int off) {
-		insertChars(x, cs, off, cs.length - off);
-	}
-
-	public void insertChars(Cursor x, char[] cs, final int off, final int len) {
+	protected void _insertChars(Cursor x, char[] cs, final int off, final int len) {
 		if (len == 0) return;
 		if (len == 1) {
-			insertChar(x, cs[0]);
+			_insertChar(x, cs[0]);
 			return;
 		}
 		ensureCursor(x);
@@ -280,37 +316,6 @@ public class Document {
 		}
 	}
 
-	public void appendChar(char c) {
-		insertChar(getEndCursor(), c);
-	}
-
-	public void insertChar(int x, char c) {
-		insertChar(Index2Cursor(x), c);
-	}
-
-	public void insertChar(Cursor x, char c) {
-		ensureCursor(x);
-		int len = L.get(x.line);
-		int col = Math.min(x.column, len);
-		if (c == '\n') {
-			ensureLineCapture(L.size() + 1);
-			L.set(x.line, col + 1);
-			int cur = x.line + 1;
-			int nl = len - col;
-			L.insert(cur, nl);
-			for (int i = L.size() - 1; i > cur; i--) S[i] = S[i - 1];
-			S[cur] = Arrays.copyOfRange(S[x.line], col, len);
-			ensureStringCapture(x.line, col + 1);
-			S[x.line][col] = '\n';
-		} else {
-			L.set(x.line, ++len);
-			ensureStringCapture(x.line, len);
-			char[] s = S[x.line];
-			for (int i = len - 1; i > col; i--) s[i] = s[i - 1];
-			s[col] = c;
-		}
-	}
-
 	public int getLineStart(int line) {
 		if (line <= 0 || L.empty()) return 0;
 		if (line >= L.size()) return L.sum();
@@ -331,21 +336,21 @@ public class Document {
 		return L.Cursor2Index(x);
 	}
 
-	private void ensureCursor(Cursor cursor) {
+	protected void ensureCursor(Cursor cursor) {
 		if (cursor.line < 0) throw new IllegalArgumentException("line number cannot be negative");
 		if (cursor.line < L.size()) return;
 		if (cursor.line == L.size() && cursor.column == 0) return;
 		throw new IllegalArgumentException("line number exceeded the total count of lines");
 	}
 
-	private static int[] ensureArrayCapture(int[] a, int len) {
+	protected static int[] ensureArrayCapture(int[] a, int len) {
 		if (a.length >= len) return a;
 		int[] ret = new int[((len - a.length - 1) / LINE_BUFFER_SIZE + 1) * LINE_BUFFER_SIZE + a.length];
 		System.arraycopy(a, 0, ret, 0, a.length);
 		return ret;
 	}
 
-	private void ensureLineCapture(int len) {
+	protected void ensureLineCapture(int len) {
 		if (S.length >= len) return;
 		int nl = ((len - S.length - 1) / COLUMN_BUFFER_SIZE + 1) * COLUMN_BUFFER_SIZE + S.length;
 		char[][] ori = S;
@@ -353,7 +358,7 @@ public class Document {
 		System.arraycopy(ori, 0, S, 0, ori.length);
 	}
 
-	private void ensureStringCapture(int line, int len) {
+	protected void ensureStringCapture(int line, int len) {
 		if (S[line] == null) {
 			S[line] = new char[len];
 			return;
@@ -365,7 +370,7 @@ public class Document {
 		System.arraycopy(ori, 0, S[line], 0, ori.length);
 	}
 
-	private void ensureRange(RangeSelection range) {
+	protected void ensureRange(RangeSelection range) {
 		final Cursor be = range.begin;
 		final Cursor en = range.end;
 		ensureCursor(be);
@@ -379,16 +384,33 @@ public class Document {
 		throw new IllegalArgumentException("The start cursor cannot be greater than the end");
 	}
 
-	@Override
-	public String toString() {
-		if (L.empty()) return "";
-		StringBuffer buffer = new StringBuffer();
+	public char[] toCharArray() {
+		return toCharArray(null);
+	}
+
+	public char[] toCharArray(char[] cs) {
+		if (cs == null) cs = new char[length()];
+		if (L.empty()) return cs;
+		CharBuffer buffer = CharBuffer.wrap(cs);
 		int len = getLineCount();
 		SplayTree.SplayNode x = L.begin();
 		for (int i = 0; i < len; i++) {
-			buffer.append(S[i], 0, x.val);
+			buffer.put(S[i], 0, x.val);
 			x = x.successor();
 		}
-		return buffer.toString();
+		return cs;
+	}
+
+	@Override
+	public String toString() {
+		if (L.empty()) return "";
+		StringBuilder ret = new StringBuilder();
+		int len = getLineCount();
+		SplayTree.SplayNode x = L.begin();
+		for (int i = 0; i < len; i++) {
+			ret.append(S[i], 0, x.val);
+			x = x.successor();
+		}
+		return ret.toString();
 	}
 }

@@ -302,11 +302,6 @@ public class SplayTree {
 		if (k == 0) return splay(root.minimum().setSon(0, val));
 		if (k == root.size) return splay(root.maximum().setSon(1, val));
 		splay(getKth(k - 1));
-		if (k == root.size - 1) {
-			SplayNode ret = root.setSon(1, val);
-			root.pushUp();
-			return ret;
-		}
 		splay(getKth(k), root);
 		SplayNode ret = root.son[1].setSon(0, val);
 		root.son[1].pushUp();
