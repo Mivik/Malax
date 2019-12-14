@@ -26,13 +26,13 @@ public class TestClass {
 		for (int i = 0; i < count; i++) {
 			int ind = random.nextInt(doc.length() + 1);
 			if (random.nextInt(8) == 0) doc.insertChar(ind, '\n');
+			else if (random.nextInt(4)==0) doc.deleteChar(ind);
 			else doc.insertChar(ind, (char) (random.nextInt(95) + 32));
 		}
 		st = System.currentTimeMillis() - st;
 		System.out.println("插入" + count + "次耗时: " + st + "ms");
 		System.out.println("平均单次插入耗时: " + ((double) st / count) + "ms");
-		System.out.println(doc);
-		printState(doc);
+//		printState(doc);
 	}
 
 	private static void SplayBenchmark() {
