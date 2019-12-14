@@ -1,21 +1,27 @@
 package com.mivik.malax;
 
+import com.mivik.mlexer.JSONLexer;
+import com.mivik.mlexer.MLexer;
+
 import java.util.Random;
 
 public class TestClass {
 	public static void main(String[] args) {
-		UndoableDocument doc = new UndoableDocument("qw\n012345\ned");
-		doc.deleteChars(5, 4);
-		System.out.println(doc);
-		System.out.println("=================");
-		doc.undo();
-		System.out.println(doc);
+		DocumentBenchmark();
+	}
+
+	private static void printState(Document doc) {
+		MLexer lexer = doc.getLexer();
+		for (int i = 1; i <= lexer.DS[0]; i++)
+			System.out.println(lexer.getTypeName(lexer.D[i]) + ":" + lexer.getTrimmedPartText(i));
+		System.out.println("============");
 	}
 
 	private static void DocumentBenchmark() {
-		final int count = 1024 * 100;
+		final int count = 1024 * 20;
 		long st = System.currentTimeMillis();
 		Document doc = new Document("".toCharArray());
+		doc.setLexer(new JSONLexer());
 		Random random = new Random();
 		for (int i = 0; i < count; i++) {
 			int ind = random.nextInt(doc.length() + 1);
@@ -25,6 +31,8 @@ public class TestClass {
 		st = System.currentTimeMillis() - st;
 		System.out.println("插入" + count + "次耗时: " + st + "ms");
 		System.out.println("平均单次插入耗时: " + ((double) st / count) + "ms");
+		System.out.println(doc);
+		printState(doc);
 	}
 
 	private static void SplayBenchmark() {

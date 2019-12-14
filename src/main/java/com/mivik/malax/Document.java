@@ -1,5 +1,8 @@
 package com.mivik.malax;
 
+import com.mivik.mlexer.MLexer;
+import com.mivik.mlexer.NullLexer;
+
 import java.nio.CharBuffer;
 import java.util.Arrays;
 
@@ -8,6 +11,7 @@ public class Document {
 
 	protected SplayTree L = new SplayTree();
 	protected char[][] S = new char[LINE_BUFFER_SIZE][];
+	protected MLexer M;
 
 	public static char[] CharSequence2CharArray(CharSequence cs) {
 		char[] ret = new char[cs.length()];
@@ -16,7 +20,7 @@ public class Document {
 	}
 
 	public Document() {
-		_clear();
+		this(null, 0, 0);
 	}
 
 	public Document(CharSequence cs) {
@@ -33,10 +37,32 @@ public class Document {
 
 	public Document(char[] cs, int off, int len) {
 		_clear();
-		_insertChars(getBeginCursor(), cs, off, len);
+		setLexer(new NullLexer());
+		if (cs != null) _insertChars(getBeginCursor(), cs, off, len);
 	}
 
-	public String substring(Cursor st, int len) {
+	public void ensureParsed() {
+		M.ensureParsed();
+	}
+
+	public void setLexer(MLexer lexer) {
+		M = lexer;
+		M.setText(new DocumentStringProvider(this));
+	}
+
+	public MLexer getLexer() {
+		return M;
+	}
+
+	public char charAt(int x) {
+		return charAt(Index2Cursor(x));
+	}
+
+	public char charAt(Cursor cursor) {
+		return S[cursor.line][cursor.column];
+	}
+
+	private StringBuilder subStringBuilder(Cursor st, int len) {
 		ensureCursor(st);
 		StringBuilder ret = new StringBuilder();
 		int line = st.line;
@@ -47,11 +73,30 @@ public class Document {
 			ret.append(S[line], col, cur.val - col);
 			cur = cur.successor();
 			++line;
-			if (line == L.size()) return ret.toString();
+			if (line == L.size()) return ret;
 			col = 0;
 		}
-		ret.append(S[line], 0, len);
-		return ret.toString();
+		ret.append(S[line], col, len);
+		return ret;
+	}
+
+	public char[] subChars(int st, int len) {
+		return subChars(Index2Cursor(st), len);
+	}
+
+	public char[] subChars(Cursor st, int len) {
+		StringBuilder r = subStringBuilder(st, len);
+		char[] ret = new char[r.length()];
+		r.getChars(0, r.length(), ret, 0);
+		return ret;
+	}
+
+	public String substring(int st, int len) {
+		return substring(Index2Cursor(st), len);
+	}
+
+	public String substring(Cursor st, int len) {
+		return subStringBuilder(st, len).toString();
 	}
 
 	public String substring(RangeSelection range) {
@@ -215,6 +260,8 @@ public class Document {
 			char[] s = S[line];
 			for (int i = col + 1; i < oriLen; i++) s[i - 1] = s[i];
 		}
+		M.onTextReferenceUpdate();
+		M.onDeleteChars(Cursor2Index(x), 1);
 	}
 
 	protected void _deleteChars(Cursor en, int len) {
@@ -238,6 +285,8 @@ public class Document {
 			int off = en.line - st.line;
 			for (int i = st.line + 1; i < L.size(); i++) S[i] = S[i + off];
 		}
+		M.onTextReferenceUpdate();
+		M.onDeleteChars(Cursor2Index(en), len);
 	}
 
 	protected void _insertChar(Cursor x, char c) {
@@ -261,9 +310,11 @@ public class Document {
 			for (int i = len - 1; i > col; i--) s[i] = s[i - 1];
 			s[col] = c;
 		}
+		M.onTextReferenceUpdate();
+		M.onInsertChars(Cursor2Index(x), 1);
 	}
 
-	protected void _insertChars(Cursor x, char[] cs, final int off, final int len) {
+	protected void _insertChars(Cursor x, final char[] cs, final int off, final int len) {
 		if (len == 0) return;
 		if (len == 1) {
 			_insertChar(x, cs[0]);
@@ -314,6 +365,8 @@ public class Document {
 				System.arraycopy(cs, d[i - 1] + 1, S[line + i], 0, d[i] - d[i - 1]);
 			}
 		}
+		M.onTextReferenceUpdate();
+		M.onInsertChars(Cursor2Index(x), len);
 	}
 
 	public int getLineStart(int line) {
