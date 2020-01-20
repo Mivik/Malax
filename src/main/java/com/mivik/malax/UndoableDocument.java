@@ -1,6 +1,6 @@
 package com.mivik.malax;
 
-public class UndoableDocument extends Document {
+public class UndoableDocument extends Malax {
 
 	public static final int DOUBLE_CLICK_INTERVAL = 300, MERGE_ACTIONS_INTERVAL = 250;
 

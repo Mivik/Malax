@@ -6,7 +6,7 @@ import com.mivik.mlexer.NullLexer;
 import java.nio.CharBuffer;
 import java.util.Arrays;
 
-public class Document {
+public class Malax {
 	public static final int LINE_BUFFER_SIZE = 8, COLUMN_BUFFER_SIZE = 8;
 
 	protected SplayTree L = new SplayTree();
@@ -19,23 +19,23 @@ public class Document {
 		return ret;
 	}
 
-	public Document() {
+	public Malax() {
 		this(null, 0, 0);
 	}
 
-	public Document(CharSequence cs) {
+	public Malax(CharSequence cs) {
 		this(CharSequence2CharArray(cs), 0, cs.length());
 	}
 
-	public Document(char[] cs) {
+	public Malax(char[] cs) {
 		this(cs, 0, cs.length);
 	}
 
-	public Document(char[] cs, int off) {
+	public Malax(char[] cs, int off) {
 		this(cs, off, cs.length - off);
 	}
 
-	public Document(char[] cs, int off, int len) {
+	public Malax(char[] cs, int off, int len) {
 		_clear();
 		setLexer(new NullLexer());
 		if (cs != null) _insertChars(getBeginCursor(), cs, off, len);
@@ -47,7 +47,7 @@ public class Document {
 
 	public void setLexer(MLexer lexer) {
 		M = lexer;
-		M.setText(new DocumentStringProvider(this));
+		M.setText(new MalaxStringProvider(this));
 	}
 
 	public MLexer getLexer() {
@@ -80,15 +80,45 @@ public class Document {
 		return ret;
 	}
 
-	public char[] subChars(int st, int len) {
-		return subChars(Index2Cursor(st), len);
+	public StringBuilder subStringBuilder(RangeSelection range) {
+		ensureRange(range);
+		final Cursor st = range.begin;
+		final Cursor en = range.end;
+		StringBuilder ret = new StringBuilder();
+		if (st.line == en.line) ret.append(S[st.line], st.column, en.column - st.column);
+		else {
+			SplayTree.SplayNode cur = L.getKth(st.line);
+			ret.append(S[st.line], st.column, cur.val - st.column);
+			cur = cur.successor();
+			for (int i = st.line + 1; i < en.line; i++) {
+				ret.append(S[i], 0, cur.val);
+				cur = cur.successor();
+			}
+			ret.append(S[en.line], 0, en.column);
+		}
+		return ret;
 	}
 
-	public char[] subChars(Cursor st, int len) {
+	public char[] subChars(int st, int len, char[] dst, int off) {
+		return subChars(Index2Cursor(st), len, dst, off);
+	}
+
+	public char[] subChars(Cursor st, int len, char[] dst, int off) {
 		StringBuilder r = subStringBuilder(st, len);
-		char[] ret = new char[r.length()];
-		r.getChars(0, r.length(), ret, 0);
-		return ret;
+		if (dst == null || dst.length < off + r.length()) dst = new char[off + r.length()];
+		r.getChars(0, r.length(), dst, off);
+		return dst;
+	}
+
+	public char[] subChars(RangeSelection range) {
+		return subChars(range, null, 0);
+	}
+
+	public char[] subChars(RangeSelection range, char[] dst, int off) {
+		StringBuilder r = subStringBuilder(range);
+		if (dst == null || dst.length < off + r.length()) dst = new char[off + r.length()];
+		r.getChars(0, r.length(), dst, off);
+		return dst;
 	}
 
 	public String substring(int st, int len) {
@@ -100,22 +130,7 @@ public class Document {
 	}
 
 	public String substring(RangeSelection range) {
-		ensureRange(range);
-		final Cursor st = range.begin;
-		final Cursor en = range.end;
-		if (st.line == en.line) return new String(S[st.line], st.column, en.column - st.column);
-		else {
-			StringBuilder ret = new StringBuilder();
-			SplayTree.SplayNode cur = L.getKth(st.line);
-			ret.append(S[st.line], st.column, cur.val - st.column);
-			cur = cur.successor();
-			for (int i = st.line + 1; i < en.line; i++) {
-				ret.append(S[i], 0, cur.val);
-				cur = cur.successor();
-			}
-			ret.append(S[en.line], 0, en.column);
-			return ret.toString();
-		}
+		return subStringBuilder(range).toString();
 	}
 
 	public SplayTree getLineTree() {

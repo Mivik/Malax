@@ -7,26 +7,26 @@ import java.util.Random;
 
 public class TestClass {
 	public static void main(String[] args) {
-		DocumentBenchmark();
+		MalaxBenchmark();
 	}
 
-	private static void printState(Document doc) {
+	private static void printState(Malax doc) {
 		MLexer lexer = doc.getLexer();
 		for (int i = 1; i <= lexer.DS[0]; i++)
 			System.out.println(lexer.getTypeName(lexer.D[i]) + ":" + lexer.getTrimmedPartText(i));
 		System.out.println("============");
 	}
 
-	private static void DocumentBenchmark() {
+	private static void MalaxBenchmark() {
 		final int count = 1024 * 20;
 		long st = System.currentTimeMillis();
-		Document doc = new Document("".toCharArray());
+		Malax doc = new Malax("".toCharArray());
 		doc.setLexer(new JSONLexer());
 		Random random = new Random();
 		for (int i = 0; i < count; i++) {
 			int ind = random.nextInt(doc.length() + 1);
 			if (random.nextInt(8) == 0) doc.insertChar(ind, '\n');
-			else if (random.nextInt(4)==0) doc.deleteChar(ind);
+			else if (random.nextInt(4) == 0) doc.deleteChar(ind);
 			else doc.insertChar(ind, (char) (random.nextInt(95) + 32));
 		}
 		st = System.currentTimeMillis() - st;
