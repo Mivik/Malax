@@ -11,7 +11,7 @@ import java.util.Arrays;
 public class Malax implements Document {
 	public static final int LINE_BUFFER_SIZE = 8, COLUMN_BUFFER_SIZE = 8;
 
-	protected SplayTree L = new SplayTree();
+	protected final SplayTree L = new SplayTree();
 	protected char[][] S = new char[LINE_BUFFER_SIZE][];
 	protected MLexer M;
 
