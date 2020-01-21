@@ -7,7 +7,8 @@ import java.util.Random;
 
 public class TestClass {
 	public static void main(String[] args) {
-		MalaxBenchmark();
+		Malax doc = new Malax("123\n234\n345");
+		System.out.println(doc.Index2Cursor(6));
 	}
 
 	private static void printState(Malax doc) {

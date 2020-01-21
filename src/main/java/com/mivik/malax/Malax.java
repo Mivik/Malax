@@ -383,6 +383,7 @@ public class Malax implements Document {
 	}
 
 	public Cursor Index2Cursor(int x) {
+		System.out.println(x);
 		return L.Index2Cursor(x);
 	}
 

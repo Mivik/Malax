@@ -114,11 +114,11 @@ public class SplayTree {
 		root = null;
 	}
 
-	public Cursor Index2Cursor(int x) {
-		if (root == null) return new Cursor(0, 0);
+	public SplayNode findLower(int x) {
+		if (root == null) return null;
 		++x;
-		if (x <= 0) return new Cursor(0, 0);
-		if (x > root.sum) return new Cursor(root.size - 1, root.maximum().val);
+		if (x <= 0) return null;
+		if (x > root.sum) return end();
 		SplayNode cur = root;
 		while (true) {
 			int lef = 0;
@@ -126,16 +126,24 @@ public class SplayTree {
 			if (x <= lef) cur = cur.son[0];
 			else {
 				x -= lef;
-				if (x <= cur.val) {
-					splay(cur);
-					lef = 0;
-					if (cur.son[0] != null) lef = cur.son[0].size;
-					return new Cursor(lef, x - 1);
-				}
+				if (x <= cur.val) return cur;
 				x -= cur.val;
 				cur = cur.son[1];
 			}
 		}
+	}
+
+	public Cursor Index2Cursor(int x) {
+		SplayNode ret = findLower(x);
+		if (ret == null) return new Cursor(0, 0);
+		splay(ret);
+		int lsiz = 0, lsum = 0;
+		SplayNode lef = ret.son[0];
+		if (lef != null) {
+			lsiz = lef.size;
+			lsum = lef.sum;
+		}
+		return new Cursor(lsiz, x - lsum);
 	}
 
 	public int Cursor2Index(Cursor x) {
