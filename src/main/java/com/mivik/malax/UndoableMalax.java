@@ -77,11 +77,6 @@ public class UndoableMalax extends Malax {
 	}
 
 	@Override
-	public void appendChars(char[] cs, int off) {
-		A.addAction(new InsertCharsAction(getEndCursor(), cs, off, cs.length - off));
-	}
-
-	@Override
 	public void appendChars(char[] cs, int off, int len) {
 		A.addAction(new InsertCharsAction(getEndCursor(), cs, off, len));
 	}
@@ -97,11 +92,6 @@ public class UndoableMalax extends Malax {
 	}
 
 	@Override
-	public void insertChars(int x, char[] cs, int off) {
-		A.addAction(new InsertCharsAction(Index2Cursor(x), cs, off, cs.length - off));
-	}
-
-	@Override
 	public void insertChars(int x, char[] cs, int off, int len) {
 		A.addAction(new InsertCharsAction(Index2Cursor(x), cs, off, len));
 	}
@@ -114,11 +104,6 @@ public class UndoableMalax extends Malax {
 	@Override
 	public void insertChars(Cursor x, char[] cs) {
 		A.addAction(new InsertCharsAction(x, cs, 0, cs.length));
-	}
-
-	@Override
-	public void insertChars(Cursor x, char[] cs, int off) {
-		A.addAction(new InsertCharsAction(x, cs, off, cs.length - off));
 	}
 
 	@Override

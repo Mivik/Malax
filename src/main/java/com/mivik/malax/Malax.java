@@ -45,7 +45,7 @@ public class Malax implements Document {
 
 	public void setLexer(MLexer lexer) {
 		M = lexer;
-		M.setText(new MalaxStringProvider(this));
+		M.setText(this);
 	}
 
 	public MLexer getLexer() {
@@ -221,6 +221,10 @@ public class Malax implements Document {
 
 	public void insertChars(int x, char[] cs, int off, int len) {
 		_insertChars(Index2Cursor(x), cs, off, len);
+	}
+
+	public void insertChars(Cursor x, char[] cs) {
+		_insertChars(x, cs, 0, cs.length);
 	}
 
 	public void insert(Cursor x, String s) {
@@ -466,7 +470,7 @@ public class Malax implements Document {
 
 	@Override
 	public DocumentAccessor getAccessor() {
-		return null;
+		return new Accessor();
 	}
 
 	class Accessor extends DocumentAccessor {
@@ -538,7 +542,7 @@ public class Malax implements Document {
 
 		@Override
 		public int length() {
-			return length();
+			return Malax.this.length();
 		}
 
 		@Override
