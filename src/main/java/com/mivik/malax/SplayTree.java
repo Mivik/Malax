@@ -114,7 +114,7 @@ public class SplayTree {
 		root = null;
 	}
 
-	public SplayNode findLower(int x) {
+	public SplayNode find(int x) {
 		if (root == null) return null;
 		++x;
 		if (x <= 0) return null;
@@ -134,7 +134,7 @@ public class SplayTree {
 	}
 
 	public Cursor Index2Cursor(int x) {
-		SplayNode ret = findLower(x);
+		SplayNode ret = find(x);
 		if (ret == null) return new Cursor(0, 0);
 		splay(ret);
 		int lsiz = 0, lsum = 0;
