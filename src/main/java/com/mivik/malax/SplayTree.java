@@ -21,39 +21,41 @@ public class SplayTree {
 		root = SplayNode.build(a, off, len);
 	}
 
-	public boolean moveLeft(Cursor cursor, int dis) {
-		if (dis == 0) return true;
-		if (cursor.column == 0 && cursor.line == 0) return false;
+	public int moveBack(Cursor cursor, int dis) {
+		if (dis == 0) return 0;
+		if (cursor.column == 0 && cursor.line == 0) return 0;
+		int odis = dis;
 		while (dis > cursor.column) {
 			dis -= cursor.column + 1;
 			if (cursor.line == 0) {
 				cursor.column = 0;
-				return true;
+				return odis - dis;
 			}
 			cursor.column = get(--cursor.line) - 1;
 		}
 		cursor.column -= dis;
-		return true;
+		return odis;
 	}
 
-	public boolean moveRight(Cursor cursor, int dis) {
-		if (dis == 0) return true;
+	public int moveForward(Cursor cursor, int dis) {
+		if (dis == 0) return 0;
 		int len = get(cursor.line);
-		if (cursor.line == size() - 1 && cursor.column == len) return false;
+		if (cursor.line == size() - 1 && cursor.column == len) return 0;
+		int odis = dis;
 		while (dis >= len - cursor.column) {
 			dis -= len - cursor.column;
 			if (cursor.line == size() - 1) {
 				cursor.column = len;
-				return true;
+				return dis - odis;
 			}
 			len = get(++cursor.line);
 			cursor.column = 0;
 		}
 		cursor.column += dis;
-		return true;
+		return odis;
 	}
 
-	public boolean moveLeft(Cursor cursor) {
+	public boolean moveBack(Cursor cursor) {
 		if (cursor.column == 0) {
 			if (cursor.line == 0) return false;
 			else cursor.column = get(--cursor.line) - 1;
@@ -61,7 +63,7 @@ public class SplayTree {
 		return true;
 	}
 
-	public boolean moveRight(Cursor cursor) {
+	public boolean moveForward(Cursor cursor) {
 		if (cursor.line == size() - 1) {
 			if (cursor.column == get(cursor.line)) return false;
 			else ++cursor.column;

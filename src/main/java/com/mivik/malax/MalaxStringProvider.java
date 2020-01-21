@@ -49,13 +49,13 @@ public class MalaxStringProvider implements Document {
 
 		@Override
 		public void moveLeft() {
-			D.moveLeft(C);
+			D.moveBack(C);
 			--ind;
 		}
 
 		@Override
 		public void moveRight() {
-			D.moveRight(C);
+			D.moveForward(C);
 			++ind;
 		}
 

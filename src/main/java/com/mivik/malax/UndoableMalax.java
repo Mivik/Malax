@@ -1,28 +1,28 @@
 package com.mivik.malax;
 
-public class UndoableDocument extends Malax {
+public class UndoableMalax extends Malax {
 
 	public static final int DOUBLE_CLICK_INTERVAL = 300, MERGE_ACTIONS_INTERVAL = 250;
 
 	private EditActionStack A = new EditActionStack();
 
-	public UndoableDocument() {
+	public UndoableMalax() {
 		_clear();
 	}
 
-	public UndoableDocument(CharSequence cs) {
+	public UndoableMalax(CharSequence cs) {
 		this(CharSequence2CharArray(cs), 0, cs.length());
 	}
 
-	public UndoableDocument(char[] cs) {
+	public UndoableMalax(char[] cs) {
 		this(cs, 0, cs.length);
 	}
 
-	public UndoableDocument(char[] cs, int off) {
+	public UndoableMalax(char[] cs, int off) {
 		this(cs, off, cs.length - off);
 	}
 
-	public UndoableDocument(char[] cs, int off, int len) {
+	public UndoableMalax(char[] cs, int off, int len) {
 		super(cs, off, len);
 	}
 
@@ -195,7 +195,7 @@ public class UndoableDocument extends Malax {
 		public InsertCharsAction(Cursor cursor, char[] cs, int off, int len) {
 			this.lef = cursor.clone();
 			this.rig = cursor.clone();
-			moveRight(rig, len);
+			moveForward(rig, len);
 			this.cs = new char[len];
 			System.arraycopy(cs, off, this.cs, 0, len);
 		}
@@ -218,7 +218,7 @@ public class UndoableDocument extends Malax {
 		public DeleteCharsAction(Cursor cursor, int len) {
 			this.lef = cursor.clone();
 			this.rig = cursor.clone();
-			moveLeft(lef, len);
+			moveBack(lef, len);
 			this.cs = substring(lef, len).toCharArray();
 		}
 
@@ -240,7 +240,7 @@ public class UndoableDocument extends Malax {
 		public InsertCharAction(Cursor cursor, char ch) {
 			this.lef = cursor.clone();
 			this.rig = cursor.clone();
-			moveRight(rig);
+			moveForward(rig);
 			this.ch = ch;
 		}
 
@@ -262,7 +262,7 @@ public class UndoableDocument extends Malax {
 		public DeleteCharAction(Cursor cursor) {
 			this.lef = cursor.clone();
 			this.rig = cursor.clone();
-			moveLeft(lef);
+			moveBack(lef);
 			this.ch = S[lef.line][lef.column];
 		}
 

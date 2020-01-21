@@ -1,12 +1,14 @@
 package com.mivik.malax;
 
+import com.mivik.mlexer.Document;
+import com.mivik.mlexer.DocumentAccessor;
 import com.mivik.mlexer.MLexer;
 import com.mivik.mlexer.NullLexer;
 
 import java.nio.CharBuffer;
 import java.util.Arrays;
 
-public class Malax {
+public class Malax implements Document {
 	public static final int LINE_BUFFER_SIZE = 8, COLUMN_BUFFER_SIZE = 8;
 
 	protected SplayTree L = new SplayTree();
@@ -29,10 +31,6 @@ public class Malax {
 
 	public Malax(char[] cs) {
 		this(cs, 0, cs.length);
-	}
-
-	public Malax(char[] cs, int off) {
-		this(cs, off, cs.length - off);
 	}
 
 	public Malax(char[] cs, int off, int len) {
@@ -141,20 +139,20 @@ public class Malax {
 		return S;
 	}
 
-	public boolean moveLeft(Cursor cursor, int dis) {
-		return L.moveLeft(cursor, dis);
+	public int moveBack(Cursor cursor, int dis) {
+		return L.moveBack(cursor, dis);
 	}
 
-	public boolean moveRight(Cursor cursor, int dis) {
-		return L.moveRight(cursor, dis);
+	public int moveForward(Cursor cursor, int dis) {
+		return L.moveForward(cursor, dis);
 	}
 
-	public boolean moveLeft(Cursor cursor) {
-		return L.moveLeft(cursor);
+	public boolean moveBack(Cursor cursor) {
+		return L.moveBack(cursor);
 	}
 
-	public boolean moveRight(Cursor cursor) {
-		return L.moveRight(cursor);
+	public boolean moveForward(Cursor cursor) {
+		return L.moveForward(cursor);
 	}
 
 	public Cursor getBeginCursor() {
@@ -209,10 +207,6 @@ public class Malax {
 		_insertChars(getEndCursor(), cs, 0, cs.length);
 	}
 
-	public void appendChars(char[] cs, int off) {
-		_insertChars(getEndCursor(), cs, off, cs.length - off);
-	}
-
 	public void appendChars(char[] cs, int off, int len) {
 		_insertChars(getEndCursor(), cs, off, len);
 	}
@@ -225,24 +219,12 @@ public class Malax {
 		_insertChars(Index2Cursor(x), cs, 0, cs.length);
 	}
 
-	public void insertChars(int x, char[] cs, int off) {
-		_insertChars(Index2Cursor(x), cs, off, cs.length - off);
-	}
-
 	public void insertChars(int x, char[] cs, int off, int len) {
 		_insertChars(Index2Cursor(x), cs, off, len);
 	}
 
 	public void insert(Cursor x, String s) {
 		_insertChars(x, s.toCharArray(), 0, s.length());
-	}
-
-	public void insertChars(Cursor x, char[] cs) {
-		_insertChars(x, cs, 0, cs.length);
-	}
-
-	public void insertChars(Cursor x, char[] cs, int off) {
-		_insertChars(x, cs, off, cs.length - off);
 	}
 
 	public void insertChar(int x, char c) {
@@ -259,7 +241,7 @@ public class Malax {
 	protected void _deleteChar(Cursor x) {
 		if (x.line == 0 && x.column == 0) return;
 		ensureCursor(x);
-		moveLeft(x);
+		moveBack(x);
 		final int line = x.line;
 		int oriLen = L.get(line);
 		final int col = Math.min(x.column, oriLen);
@@ -282,10 +264,10 @@ public class Malax {
 	protected void _deleteChars(Cursor en, int len) {
 		if (en.line == 0 && en.column == 0) return;
 		ensureCursor(en);
-		moveLeft(en);
+		moveBack(en);
 		len = Math.min(len, Cursor2Index(en) + 1);
 		Cursor st = en.clone();
-		moveLeft(st, len - 1);
+		moveBack(st, len - 1);
 		int enLen = L.get(en.line);
 		if (st.line == en.line) {
 			L.set(st.line, enLen - len);
@@ -480,5 +462,93 @@ public class Malax {
 			x = x.successor();
 		}
 		return ret.toString();
+	}
+
+	@Override
+	public DocumentAccessor getAccessor() {
+		return null;
+	}
+
+	class Accessor extends DocumentAccessor {
+		private Cursor C;
+		private int ind;
+
+		Accessor() {
+			this.C = getBeginCursor();
+			this.ind = 0;
+		}
+
+		Accessor(Cursor cursor, int ind) {
+			this.C = cursor;
+			this.ind = ind;
+		}
+
+		@Override
+		public void moveCursor(int x) {
+			this.C = Index2Cursor(x);
+			this.ind = x;
+		}
+
+		@Override
+		public int getCursor() {
+			return ind;
+		}
+
+		@Override
+		public char get() {
+			return charAt(C);
+		}
+
+		@Override
+		public boolean moveBack() {
+			if (Malax.this.moveBack(C)) {
+				--ind;
+				return true;
+			}
+			return false;
+		}
+
+		@Override
+		public boolean moveForward() {
+			if (Malax.this.moveForward(C)) {
+				++ind;
+				return true;
+			}
+			return false;
+		}
+
+		@Override
+		public int moveBack(int x) {
+			int ret = Malax.this.moveBack(C, x);
+			ind -= ret;
+			return ret;
+		}
+
+		@Override
+		public int moveForward(int x) {
+			int ret = Malax.this.moveForward(C, x);
+			ind += ret;
+			return ret;
+		}
+
+		@Override
+		public String substring(int st, int en) {
+			return substring(st, en - st);
+		}
+
+		@Override
+		public int length() {
+			return length();
+		}
+
+		@Override
+		public void getChars(int st, int len, char[] dst, int off) {
+			subChars(st, len, dst, off);
+		}
+
+		@Override
+		public DocumentAccessor clone() {
+			return new Accessor(C, ind);
+		}
 	}
 }

@@ -20,7 +20,7 @@ public class TestClass {
 	private static void MalaxBenchmark() {
 		final int count = 1024 * 20;
 		long st = System.currentTimeMillis();
-		Malax doc = new Malax("".toCharArray());
+		Malax doc = new Malax("");
 		doc.setLexer(new JSONLexer());
 		Random random = new Random();
 		for (int i = 0; i < count; i++) {
