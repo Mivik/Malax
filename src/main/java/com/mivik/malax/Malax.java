@@ -69,6 +69,20 @@ public class Malax extends Editable<Malax.Cursor> {
 		return L.size();
 	}
 
+	public RangeSelection<Cursor> getLineSelection(int line) {
+		return new RangeSelection<>(new Cursor(line, 0), new Cursor(line, L.get(line)));
+	}
+
+	public char[] getLineChars(int line) {
+		char[] ret = new char[L.get(line)];
+		System.arraycopy(S[line], 0, ret, 0, ret.length);
+		return ret;
+	}
+
+	public String getLine(int line) {
+		return new String(S[line], 0, L.get(line));
+	}
+
 	@Override
 	public char charAt(Cursor cursor) {
 		return S[cursor.line][cursor.column];
