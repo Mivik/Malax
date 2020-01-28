@@ -10,7 +10,7 @@ import java.util.Arrays;
 public class Malax extends Editable<Malax.Cursor> {
 	public static final int LINE_BUFFER_SIZE = 8, COLUMN_BUFFER_SIZE = 8;
 
-	protected final SplayTree L = new SplayTree();
+	protected final LineManager L = new LineManager();
 	protected char[][] S = new char[LINE_BUFFER_SIZE][];
 	protected MLexer M;
 
@@ -45,7 +45,7 @@ public class Malax extends Editable<Malax.Cursor> {
 		return M;
 	}
 
-	public SplayTree getLineTree() {
+	public LineManager getLineManager() {
 		return L;
 	}
 
@@ -54,15 +54,11 @@ public class Malax extends Editable<Malax.Cursor> {
 	}
 
 	public int getLineStart(int line) {
-		if (line <= 0 || L.empty()) return 0;
-		if (line >= L.size()) return L.sum();
-		return L.getPrefixSum(line - 1);
+		return L.getLineStart(line);
 	}
 
 	public int getLineEnd(int line) {
-		if (line <= 0 || L.empty()) return 0;
-		if (line >= L.size()) return L.sum();
-		return L.getPrefixSum(line);
+		return L.getLineEnd(line);
 	}
 
 	public int getLineCount() {
@@ -96,13 +92,8 @@ public class Malax extends Editable<Malax.Cursor> {
 		StringBuilder ret = new StringBuilder();
 		if (st.line == en.line) ret.append(S[st.line], st.column, en.column - st.column);
 		else {
-			SplayTree.SplayNode cur = L.getKth(st.line);
-			ret.append(S[st.line], st.column, cur.val - st.column);
-			cur = cur.successor();
-			for (int i = st.line + 1; i < en.line; i++) {
-				ret.append(S[i], 0, cur.val);
-				cur = cur.successor();
-			}
+			ret.append(S[st.line], st.column, L.get(st.line) - st.column);
+			for (int i = st.line + 1; i < en.line; i++) ret.append(S[i], 0, L.get(i));
 			ret.append(S[en.line], 0, en.column);
 		}
 		return ret;
@@ -140,7 +131,7 @@ public class Malax extends Editable<Malax.Cursor> {
 
 	@Override
 	public int length() {
-		return L.sum();
+		return L.length();
 	}
 
 	@Override
@@ -189,12 +180,8 @@ public class Malax extends Editable<Malax.Cursor> {
 			for (int i = en.column + 1; i < enLen; i++) s[i - len] = s[i];
 		} else {
 			final int nl = st.column + enLen - en.column - 1;
-			SplayTree.SplayNode node = L.getRange(st.line, en.line);
-			len = node.sum - st.column - enLen + en.column + 1;
-			SplayTree.SplayNode lef = node.minimum();
-			L.splay(lef, node.fa);
-			L.removeSons(lef);
-			L.set(lef, nl);
+			len = L.E[en.line + 1] - L.E[st.line] - nl;
+			L.merge(st.line, en.line, nl);
 			ensureStringCapture(st.line, nl);
 			System.arraycopy(S[en.line], en.column + 1, S[st.line], st.column, enLen - en.column - 1);
 			int off = en.line - st.line;
@@ -240,27 +227,19 @@ public class Malax extends Editable<Malax.Cursor> {
 		ensureCursor(x);
 		int i;
 		final int line = x.line;
-		SplayTree.SplayNode cur = null;
-		cur = L.getKth(line);
-		final int oriLen = cur.val;
+		final int oriLen = L.get(line);
 		final int col = Math.min(x.column, oriLen);
 		final int rig = oriLen - col;
-		int lst = -col;
-		int curLine = x.line;
 		int tot = 0;
 		int[] d = new int[LINE_BUFFER_SIZE];
+		// TODO 有没有问题？？
 		for (i = 0; i < len; ) {
 			if (cs[off + i] == '\n') {
 				d = ensureArrayCapture(d, tot + 1);
 				d[tot++] = i++;
-				cur.val = i - lst;
-				L.splay(cur);
-				cur = L.insert(++curLine, 0);
-				lst = i;
 			} else ++i;
 		}
-		cur.val = i - lst + rig;
-		L.splay(cur);
+		L.insertAll(x, d, tot, len);
 		if (tot == 0) {
 			ensureStringCapture(line, oriLen + len);
 			char[] s = S[line];
@@ -353,11 +332,7 @@ public class Malax extends Editable<Malax.Cursor> {
 		if (L.empty()) return cs;
 		CharBuffer buffer = CharBuffer.wrap(cs);
 		int len = getLineCount();
-		SplayTree.SplayNode x = L.begin();
-		for (int i = 0; i < len; i++) {
-			buffer.put(S[i], 0, x.val);
-			x = x.successor();
-		}
+		for (int i = 0; i < len; i++) buffer.put(S[i], 0, L.get(i));
 		return cs;
 	}
 
@@ -366,11 +341,7 @@ public class Malax extends Editable<Malax.Cursor> {
 		if (L.empty()) return "";
 		StringBuilder ret = new StringBuilder();
 		int len = getLineCount();
-		SplayTree.SplayNode x = L.begin();
-		for (int i = 0; i < len; i++) {
-			ret.append(S[i], 0, x.val);
-			x = x.successor();
-		}
+		for (int i = 0; i < len; i++) ret.append(S[i], 0, L.get(i));
 		return ret.toString();
 	}
 

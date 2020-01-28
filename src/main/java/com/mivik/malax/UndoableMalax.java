@@ -29,8 +29,8 @@ public class UndoableMalax extends UndoableEditable<Malax.Cursor> {
 		return getMalax().getLexer();
 	}
 
-	public SplayTree getLineTree() {
-		return getMalax().getLineTree();
+	public LineManager getLineManager() {
+		return getMalax().getLineManager();
 	}
 
 	public char[][] getLines() {

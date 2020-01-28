@@ -2,18 +2,14 @@ package com.mivik.malax;
 
 import com.mivik.mlexer.JSONLexer;
 import com.mivik.mlexer.MLexer;
-import com.mivik.mlexer.RangeSelection;
 
 import java.util.Random;
 
 public class TestClass {
 	public static void main(String[] args) {
-		Malax malax = new Malax("123\n234\n345");
-		UndoableMalax doc = new UndoableMalax(malax);
-		doc.delete(new RangeSelection<>(doc, 1, 5));
-		System.out.println(doc);
-		doc.undo();
-		System.out.println(doc);
+		Malax malax = new Malax("123\n456");
+		malax.insert(malax.Index2Cursor(1), "78\na23\nb");
+		System.out.println(malax);
 	}
 
 	private static void printState(Malax doc) {
@@ -40,23 +36,5 @@ public class TestClass {
 		System.out.println("插入" + count + "次耗时: " + st + "ms");
 		System.out.println("平均单次插入耗时: " + ((double) st / count) + "ms");
 //		printState(doc);
-	}
-
-	private static void SplayBenchmark() {
-		int i;
-		final int size = 1000000; //序列长度
-		final int count = 1000000; //查询次数
-		SplayTree tree = new SplayTree();
-		Random random = new Random();
-		//插入{size}个随机数
-		for (i = 0; i < size; i++) tree.append(random.nextInt(200));
-
-		//查询{count}次
-		long st = System.currentTimeMillis();
-		for (i = 0; i < count; i++) tree.getPrefixSum(random.nextInt(size));
-		st = System.currentTimeMillis() - st;
-		System.out.println("序列长度: " + size);
-		System.out.println("查询" + count + "次前缀和总耗时: " + st + "ms");
-		System.out.println("平均单次查询前缀和耗时: " + ((double) st / count) + "ms");
 	}
 }
