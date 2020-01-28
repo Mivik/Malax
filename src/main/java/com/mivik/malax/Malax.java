@@ -387,22 +387,6 @@ public class Malax extends Editable<Malax.Cursor> {
 			this.column = ori.column;
 		}
 
-		public void setLine(int line) {
-			this.line = line;
-		}
-
-		public void setColumn(int col) {
-			this.column = col;
-		}
-
-		public int getLine() {
-			return line;
-		}
-
-		public int getColumn() {
-			return column;
-		}
-
 		@Override
 		public Cursor clone() {
 			return new Cursor(this);
