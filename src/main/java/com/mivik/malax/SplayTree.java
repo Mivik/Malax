@@ -93,11 +93,6 @@ public class SplayTree {
 		return root == null ? null : root.minimum();
 	}
 
-	public int indexOf(SplayNode x) {
-		splay(x);
-		return x.son[0] == null ? 0 : x.son[0].size;
-	}
-
 	public int sum() {
 		return root == null ? 0 : root.sum;
 	}
@@ -112,6 +107,11 @@ public class SplayTree {
 
 	public void clear() {
 		root = null;
+	}
+
+	public int indexOf(SplayNode x) {
+		splay(x);
+		return x.son[0] == null ? 0 : x.son[0].size;
 	}
 
 	public SplayNode find(int x) {

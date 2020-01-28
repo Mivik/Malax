@@ -18,10 +18,6 @@ public class Malax extends Editable<Malax.Cursor> {
 		this(null, 0, 0);
 	}
 
-	public Malax(CharSequence cs) {
-		this(Editable.CharSequence2CharArray(cs, 0, cs.length()), 0, cs.length());
-	}
-
 	public Malax(char[] cs) {
 		this(cs, 0, cs.length);
 	}
@@ -30,6 +26,10 @@ public class Malax extends Editable<Malax.Cursor> {
 		clear();
 		setLexer(new NullLexer());
 		if (cs != null) insert(getBeginCursor(), cs, off, len);
+	}
+
+	public Malax(CharSequence cs) {
+		this(Editable.CharSequence2CharArray(cs, 0, cs.length()), 0, cs.length());
 	}
 
 	public void ensureParsed() {
@@ -43,6 +43,30 @@ public class Malax extends Editable<Malax.Cursor> {
 
 	public MLexer getLexer() {
 		return M;
+	}
+
+	public SplayTree getLineTree() {
+		return L;
+	}
+
+	public char[][] getLines() {
+		return S;
+	}
+
+	public int getLineStart(int line) {
+		if (line <= 0 || L.empty()) return 0;
+		if (line >= L.size()) return L.sum();
+		return L.getPrefixSum(line - 1);
+	}
+
+	public int getLineEnd(int line) {
+		if (line <= 0 || L.empty()) return 0;
+		if (line >= L.size()) return L.sum();
+		return L.getPrefixSum(line);
+	}
+
+	public int getLineCount() {
+		return L.size();
 	}
 
 	@Override
@@ -68,14 +92,6 @@ public class Malax extends Editable<Malax.Cursor> {
 			ret.append(S[en.line], 0, en.column);
 		}
 		return ret;
-	}
-
-	public SplayTree getLineTree() {
-		return L;
-	}
-
-	public char[][] getLines() {
-		return S;
 	}
 
 	@Override
@@ -264,22 +280,6 @@ public class Malax extends Editable<Malax.Cursor> {
 	@Override
 	public int Cursor2Index(Cursor x) {
 		return L.Cursor2Index(x);
-	}
-
-	public int getLineStart(int line) {
-		if (line <= 0 || L.empty()) return 0;
-		if (line >= L.size()) return L.sum();
-		return L.getPrefixSum(line - 1);
-	}
-
-	public int getLineEnd(int line) {
-		if (line <= 0 || L.empty()) return 0;
-		if (line >= L.size()) return L.sum();
-		return L.getPrefixSum(line);
-	}
-
-	public int getLineCount() {
-		return L.size();
 	}
 
 	protected void ensureCursor(Cursor cursor) {

@@ -7,8 +7,8 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 
 	public static final int MERGE_ACTIONS_INTERVAL = 250;
 
-	private Editable<T> E;
-	private EditActionStack A = new EditActionStack();
+	protected Editable<T> E;
+	protected EditActionStack A = new EditActionStack();
 
 	public UndoableEditable(Editable<T> editable) {
 		this.E = editable;
@@ -117,6 +117,11 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 	@Override
 	public int Cursor2Index(T x) {
 		return E.Cursor2Index(x);
+	}
+
+	@Override
+	public char[] toCharArray() {
+		return E.toCharArray();
 	}
 
 	private MergedAction mergeActions(EditAction ori, EditAction ac) {
