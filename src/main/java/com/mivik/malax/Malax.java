@@ -375,7 +375,7 @@ public class Malax extends Editable<Malax.Cursor> {
 	}
 
 	public static class Cursor extends com.mivik.mlexer.Cursor implements Comparable<Cursor> {
-		int line, column;
+		public int line, column;
 
 		public Cursor(int line, int col) {
 			this.line = line;
