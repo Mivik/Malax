@@ -120,6 +120,11 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 	}
 
 	@Override
+	public void setText(char[] cs, int off, int len) {
+		A.addAction(new SetTextAction(cs, off, len));
+	}
+
+	@Override
 	public char[] toCharArray() {
 		return E.toCharArray();
 	}
@@ -182,6 +187,28 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 		@Override
 		public void undo() {
 			for (int i = pos - 1; i >= 0; i--) actions[i].undo();
+		}
+	}
+
+	public class SetTextAction implements EditAction {
+		private char[] ocs, ncs;
+
+		public SetTextAction(char[] cs, int off, int len) {
+			ocs = E.toCharArray();
+			ncs = new char[len];
+			System.arraycopy(cs, off, ncs, 0, len);
+		}
+
+		@Override
+		public void undo() {
+			E.clear();
+			E.insert(E.getBeginCursor(), ocs);
+		}
+
+		@Override
+		public void redo() {
+			E.clear();
+			E.insert(E.getBeginCursor(), ncs);
 		}
 	}
 

@@ -49,4 +49,17 @@ public abstract class Editable<T extends Cursor> extends Document<T> {
 		delete(sel);
 		insert(sel.begin, cs, off, len);
 	}
+
+	public final void setText(String s) {
+		setText(s.toCharArray(), 0, s.length());
+	}
+
+	public final void setText(char[] cs) {
+		setText(cs, 0, cs.length);
+	}
+
+	public void setText(char[] cs, int off, int len) {
+		clear();
+		insert(getBeginCursor(), cs, off, len);
+	}
 }
