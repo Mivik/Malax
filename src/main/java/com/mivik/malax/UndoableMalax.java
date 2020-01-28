@@ -1,6 +1,7 @@
 package com.mivik.malax;
 
 import com.mivik.mlexer.MLexer;
+import com.mivik.mlexer.RangeSelection;
 
 public class UndoableMalax extends UndoableEditable<Malax.Cursor> {
 
@@ -46,5 +47,17 @@ public class UndoableMalax extends UndoableEditable<Malax.Cursor> {
 
 	public int getLineCount() {
 		return getMalax().getLineCount();
+	}
+
+	public RangeSelection<Malax.Cursor> getLineSelection(int line) {
+		return getMalax().getLineSelection(line);
+	}
+
+	public char[] getLineChars(int line) {
+		return getMalax().getLineChars(line);
+	}
+
+	public String getLine(int line) {
+		return getMalax().getLine(line);
 	}
 }
