@@ -2,13 +2,18 @@ package com.mivik.malax;
 
 import com.mivik.mlexer.JSONLexer;
 import com.mivik.mlexer.MLexer;
+import com.mivik.mlexer.RangeSelection;
 
 import java.util.Random;
 
 public class TestClass {
 	public static void main(String[] args) {
-		Malax doc = new Malax("123\n234\n345");
-		System.out.println(doc.Index2Cursor(6));
+		Malax malax = new Malax("123\n234\n345");
+		UndoableMalax doc = new UndoableMalax(malax);
+		doc.delete(new RangeSelection<>(doc, 1, 5));
+		System.out.println(doc);
+		doc.undo();
+		System.out.println(doc);
 	}
 
 	private static void printState(Malax doc) {
@@ -26,9 +31,10 @@ public class TestClass {
 		Random random = new Random();
 		for (int i = 0; i < count; i++) {
 			int ind = random.nextInt(doc.length() + 1);
-			if (random.nextInt(8) == 0) doc.insertChar(ind, '\n');
-			else if (random.nextInt(4) == 0) doc.deleteChar(ind);
-			else doc.insertChar(ind, (char) (random.nextInt(95) + 32));
+			Malax.Cursor cursor = doc.Index2Cursor(ind);
+			if (random.nextInt(8) == 0) doc.insert(cursor, '\n');
+			else if (random.nextInt(4) == 0) doc.delete(cursor);
+			else doc.insert(cursor, (char) (random.nextInt(95) + 32));
 		}
 		st = System.currentTimeMillis() - st;
 		System.out.println("插入" + count + "次耗时: " + st + "ms");

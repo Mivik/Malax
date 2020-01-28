@@ -21,7 +21,7 @@ public class SplayTree {
 		root = SplayNode.build(a, off, len);
 	}
 
-	public int moveBack(Cursor cursor, int dis) {
+	public int moveBack(Malax.Cursor cursor, int dis) {
 		if (dis == 0) return 0;
 		if (cursor.column == 0 && cursor.line == 0) return 0;
 		int odis = dis;
@@ -37,7 +37,7 @@ public class SplayTree {
 		return odis;
 	}
 
-	public int moveForward(Cursor cursor, int dis) {
+	public int moveForward(Malax.Cursor cursor, int dis) {
 		if (dis == 0) return 0;
 		int len = get(cursor.line);
 		if (cursor.line == size() - 1 && cursor.column == len) return 0;
@@ -55,7 +55,7 @@ public class SplayTree {
 		return odis;
 	}
 
-	public boolean moveBack(Cursor cursor) {
+	public boolean moveBack(Malax.Cursor cursor) {
 		if (cursor.column == 0) {
 			if (cursor.line == 0) return false;
 			else cursor.column = get(--cursor.line) - 1;
@@ -63,7 +63,7 @@ public class SplayTree {
 		return true;
 	}
 
-	public boolean moveForward(Cursor cursor) {
+	public boolean moveForward(Malax.Cursor cursor) {
 		if (cursor.line == size() - 1) {
 			if (cursor.column == get(cursor.line)) return false;
 			else ++cursor.column;
@@ -76,13 +76,13 @@ public class SplayTree {
 		return true;
 	}
 
-	public Cursor getBeginCursor() {
-		return new Cursor(0, 0);
+	public Malax.Cursor getBeginCursor() {
+		return new Malax.Cursor(0, 0);
 	}
 
-	public Cursor getEndCursor() {
-		if (root == null) return new Cursor(0, 0);
-		return new Cursor(root.size - 1, end().val);
+	public Malax.Cursor getEndCursor() {
+		if (root == null) return new Malax.Cursor(0, 0);
+		return new Malax.Cursor(root.size - 1, end().val);
 	}
 
 	public SplayNode end() {
@@ -133,9 +133,9 @@ public class SplayTree {
 		}
 	}
 
-	public Cursor Index2Cursor(int x) {
+	public Malax.Cursor Index2Cursor(int x) {
 		SplayNode ret = find(x);
-		if (ret == null) return new Cursor(0, 0);
+		if (ret == null) return new Malax.Cursor(0, 0);
 		splay(ret);
 		int lsiz = 0, lsum = 0;
 		SplayNode lef = ret.son[0];
@@ -143,10 +143,10 @@ public class SplayTree {
 			lsiz = lef.size;
 			lsum = lef.sum;
 		}
-		return new Cursor(lsiz, x - lsum);
+		return new Malax.Cursor(lsiz, x - lsum);
 	}
 
-	public int Cursor2Index(Cursor x) {
+	public int Cursor2Index(Malax.Cursor x) {
 		if (root == null) return 0;
 		if (x.line < 0) return 0;
 		if (x.line >= root.size) return root.sum - 1;
@@ -162,9 +162,12 @@ public class SplayTree {
 
 	public void set(int k, int val) {
 		if (root == null || (k >= root.size || k < 0)) throw new ArrayIndexOutOfBoundsException(k);
-		SplayNode cur = getKth(k);
-		cur.val = val;
-		splay(cur);
+		set(getKth(k), val);
+	}
+
+	public void set(SplayNode x, int val) {
+		x.val = val;
+		splay(x);
 	}
 
 	public int getPrefixSum(int k) {
@@ -202,6 +205,11 @@ public class SplayTree {
 		return ret;
 	}
 
+	public void removeSons(SplayNode x) {
+		x.son[0] = x.son[1] = null;
+		splay(x);
+	}
+
 	public void remove(int k) {
 		if (root == null || (k >= root.size || k < 0)) throw new ArrayIndexOutOfBoundsException(k);
 		if (root.size == 1) {
@@ -231,7 +239,10 @@ public class SplayTree {
 		if (root == null || (l < 0 || l >= root.size)) throw new ArrayIndexOutOfBoundsException(l);
 		if (r < 0 || r >= root.size) throw new ArrayIndexOutOfBoundsException(r);
 		if (l > r) throw new IllegalArgumentException("l cannot be greater then r");
-		if (l == 0) return splay(getKth(r + 1)).son[0];
+		if (l == 0) {
+			if (r == root.size - 1) return root;
+			return splay(getKth(r + 1)).son[0];
+		}
 		if (r == root.size - 1) return splay(getKth(l - 1)).son[1];
 		splay(getKth(l - 1));
 		splay(getKth(r + 1), root);

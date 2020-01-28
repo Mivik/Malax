@@ -1,32 +1,25 @@
 package com.mivik.malax;
 
-import com.mivik.mlexer.Document;
-import com.mivik.mlexer.DocumentAccessor;
 import com.mivik.mlexer.MLexer;
 import com.mivik.mlexer.NullLexer;
+import com.mivik.mlexer.RangeSelection;
 
 import java.nio.CharBuffer;
 import java.util.Arrays;
 
-public class Malax implements Document {
+public class Malax extends Editable<Malax.Cursor> {
 	public static final int LINE_BUFFER_SIZE = 8, COLUMN_BUFFER_SIZE = 8;
 
 	protected final SplayTree L = new SplayTree();
 	protected char[][] S = new char[LINE_BUFFER_SIZE][];
 	protected MLexer M;
 
-	public static char[] CharSequence2CharArray(CharSequence cs) {
-		char[] ret = new char[cs.length()];
-		for (int i = 0; i < cs.length(); i++) ret[i] = cs.charAt(i);
-		return ret;
-	}
-
 	public Malax() {
 		this(null, 0, 0);
 	}
 
 	public Malax(CharSequence cs) {
-		this(CharSequence2CharArray(cs), 0, cs.length());
+		this(Editable.CharSequence2CharArray(cs, 0, cs.length()), 0, cs.length());
 	}
 
 	public Malax(char[] cs) {
@@ -34,9 +27,9 @@ public class Malax implements Document {
 	}
 
 	public Malax(char[] cs, int off, int len) {
-		_clear();
+		clear();
 		setLexer(new NullLexer());
-		if (cs != null) _insertChars(getBeginCursor(), cs, off, len);
+		if (cs != null) insert(getBeginCursor(), cs, off, len);
 	}
 
 	public void ensureParsed() {
@@ -45,40 +38,20 @@ public class Malax implements Document {
 
 	public void setLexer(MLexer lexer) {
 		M = lexer;
-		M.setText(this);
+		M.setDocument(this);
 	}
 
 	public MLexer getLexer() {
 		return M;
 	}
 
-	public char charAt(int x) {
-		return charAt(Index2Cursor(x));
-	}
-
+	@Override
 	public char charAt(Cursor cursor) {
 		return S[cursor.line][cursor.column];
 	}
 
-	private StringBuilder subStringBuilder(Cursor st, int len) {
-		ensureCursor(st);
-		StringBuilder ret = new StringBuilder();
-		int line = st.line;
-		int col = st.column;
-		SplayTree.SplayNode cur = L.getKth(line);
-		while (len > cur.val - col) {
-			len -= cur.val - col;
-			ret.append(S[line], col, cur.val - col);
-			cur = cur.successor();
-			++line;
-			if (line == L.size()) return ret;
-			col = 0;
-		}
-		ret.append(S[line], col, len);
-		return ret;
-	}
-
-	public StringBuilder subStringBuilder(RangeSelection range) {
+	@Override
+	public StringBuilder subStringBuilder(RangeSelection<Cursor> range) {
 		ensureRange(range);
 		final Cursor st = range.begin;
 		final Cursor en = range.end;
@@ -97,40 +70,6 @@ public class Malax implements Document {
 		return ret;
 	}
 
-	public char[] subChars(int st, int len, char[] dst, int off) {
-		return subChars(Index2Cursor(st), len, dst, off);
-	}
-
-	public char[] subChars(Cursor st, int len, char[] dst, int off) {
-		StringBuilder r = subStringBuilder(st, len);
-		if (dst == null || dst.length < off + r.length()) dst = new char[off + r.length()];
-		r.getChars(0, r.length(), dst, off);
-		return dst;
-	}
-
-	public char[] subChars(RangeSelection range) {
-		return subChars(range, null, 0);
-	}
-
-	public char[] subChars(RangeSelection range, char[] dst, int off) {
-		StringBuilder r = subStringBuilder(range);
-		if (dst == null || dst.length < off + r.length()) dst = new char[off + r.length()];
-		r.getChars(0, r.length(), dst, off);
-		return dst;
-	}
-
-	public String substring(int st, int len) {
-		return substring(Index2Cursor(st), len);
-	}
-
-	public String substring(Cursor st, int len) {
-		return subStringBuilder(st, len).toString();
-	}
-
-	public String substring(RangeSelection range) {
-		return subStringBuilder(range).toString();
-	}
-
 	public SplayTree getLineTree() {
 		return L;
 	}
@@ -139,110 +78,51 @@ public class Malax implements Document {
 		return S;
 	}
 
+	@Override
 	public int moveBack(Cursor cursor, int dis) {
 		return L.moveBack(cursor, dis);
 	}
 
+	@Override
 	public int moveForward(Cursor cursor, int dis) {
 		return L.moveForward(cursor, dis);
 	}
 
+	@Override
 	public boolean moveBack(Cursor cursor) {
 		return L.moveBack(cursor);
 	}
 
+	@Override
 	public boolean moveForward(Cursor cursor) {
 		return L.moveForward(cursor);
 	}
 
+	@Override
 	public Cursor getBeginCursor() {
 		return L.getBeginCursor();
 	}
 
+	@Override
 	public Cursor getEndCursor() {
 		return L.getEndCursor();
 	}
 
+	@Override
 	public int length() {
 		return L.sum();
 	}
 
-	public int getLineCount() {
-		return L.size();
-	}
-
-	public int getLineLength(int x) {
-		return L.get(x);
-	}
-
-	public String getLine(int x) {
-		return new String(S[x], 0, getLineLength(x));
-	}
-
-	public char[] getLineChars(int x) {
-		return S[x];
-	}
-
+	@Override
 	public void clear() {
-		_clear();
-	}
-
-	public void deleteChars(int x, int len) {
-		_deleteChars(Index2Cursor(x), len);
-	}
-
-	public void deleteChar(int x) {
-		_deleteChar(Index2Cursor(x));
-	}
-
-	public void append(CharSequence s) {
-		_insertChars(getEndCursor(), CharSequence2CharArray(s), 0, s.length());
-	}
-
-	public void appendChar(char c) {
-		_insertChar(getEndCursor(), c);
-	}
-
-	public void appendChars(char[] cs) {
-		_insertChars(getEndCursor(), cs, 0, cs.length);
-	}
-
-	public void appendChars(char[] cs, int off, int len) {
-		_insertChars(getEndCursor(), cs, off, len);
-	}
-
-	public void insert(int x, CharSequence s) {
-		_insertChars(Index2Cursor(x), CharSequence2CharArray(s), 0, s.length());
-	}
-
-	public void insertChars(int x, char[] cs) {
-		_insertChars(Index2Cursor(x), cs, 0, cs.length);
-	}
-
-	public void insertChars(int x, char[] cs, int off, int len) {
-		_insertChars(Index2Cursor(x), cs, off, len);
-	}
-
-	public void insertChars(Cursor x, char[] cs) {
-		_insertChars(x, cs, 0, cs.length);
-	}
-
-	public void insert(Cursor x, String s) {
-		_insertChars(x, s.toCharArray(), 0, s.length());
-	}
-
-	public void insertChar(int x, char c) {
-		_insertChar(Index2Cursor(x), c);
-	}
-
-	public void _clear() {
 		L.clear();
 		L.append(0);
 		S = new char[LINE_BUFFER_SIZE][];
 		S[0] = new char[0];
 	}
 
-	protected void _deleteChar(Cursor x) {
+	@Override
+	public void delete(Cursor x) {
 		if (x.line == 0 && x.column == 0) return;
 		ensureCursor(x);
 		moveBack(x);
@@ -265,22 +145,26 @@ public class Malax implements Document {
 		M.onDeleteChars(Cursor2Index(x), 1);
 	}
 
-	protected void _deleteChars(Cursor en, int len) {
-		if (en.line == 0 && en.column == 0) return;
-		ensureCursor(en);
+	@Override
+	public void delete(final RangeSelection<Cursor> sel) {
+		final Cursor st = sel.begin;
+		final Cursor en = sel.end.clone();
 		moveBack(en);
-		len = Math.min(len, Cursor2Index(en) + 1);
-		Cursor st = en.clone();
-		moveBack(st, len - 1);
 		int enLen = L.get(en.line);
+		int len;
 		if (st.line == en.line) {
+			len = en.column - st.column;
 			L.set(st.line, enLen - len);
 			char[] s = S[st.line];
 			for (int i = en.column + 1; i < enLen; i++) s[i - len] = s[i];
 		} else {
-			int nl = st.column + enLen - en.column - 1;
-			L.set(st.line, nl);
-			L.removeRange(st.line + 1, en.line);
+			final int nl = st.column + enLen - en.column - 1;
+			SplayTree.SplayNode node = L.getRange(st.line, en.line);
+			len = node.sum - st.column - enLen + en.column + 1;
+			SplayTree.SplayNode lef = node.minimum();
+			L.splay(lef, node.fa);
+			L.removeSons(lef);
+			L.set(lef, nl);
 			ensureStringCapture(st.line, nl);
 			System.arraycopy(S[en.line], en.column + 1, S[st.line], st.column, enLen - en.column - 1);
 			int off = en.line - st.line;
@@ -290,7 +174,8 @@ public class Malax implements Document {
 		M.onDeleteChars(Cursor2Index(en), len);
 	}
 
-	protected void _insertChar(Cursor x, char c) {
+	@Override
+	public void insert(Cursor x, char c) {
 		ensureCursor(x);
 		int len = L.get(x.line);
 		int col = Math.min(x.column, len);
@@ -315,10 +200,11 @@ public class Malax implements Document {
 		M.onInsertChars(Cursor2Index(x), 1);
 	}
 
-	protected void _insertChars(Cursor x, final char[] cs, final int off, final int len) {
+	@Override
+	public void insert(Cursor x, final char[] cs, final int off, final int len) {
 		if (len == 0) return;
 		if (len == 1) {
-			_insertChar(x, cs[0]);
+			insert(x, cs[0]);
 			return;
 		}
 		ensureCursor(x);
@@ -370,6 +256,16 @@ public class Malax implements Document {
 		M.onInsertChars(Cursor2Index(x), len);
 	}
 
+	@Override
+	public Cursor Index2Cursor(int x) {
+		return L.Index2Cursor(x);
+	}
+
+	@Override
+	public int Cursor2Index(Cursor x) {
+		return L.Cursor2Index(x);
+	}
+
 	public int getLineStart(int line) {
 		if (line <= 0 || L.empty()) return 0;
 		if (line >= L.size()) return L.sum();
@@ -382,13 +278,8 @@ public class Malax implements Document {
 		return L.getPrefixSum(line);
 	}
 
-	public Cursor Index2Cursor(int x) {
-		System.out.println(x);
-		return L.Index2Cursor(x);
-	}
-
-	public int Cursor2Index(Cursor x) {
-		return L.Cursor2Index(x);
+	public int getLineCount() {
+		return L.size();
 	}
 
 	protected void ensureCursor(Cursor cursor) {
@@ -425,7 +316,7 @@ public class Malax implements Document {
 		System.arraycopy(ori, 0, S[line], 0, ori.length);
 	}
 
-	protected void ensureRange(RangeSelection range) {
+	protected void ensureRange(RangeSelection<Cursor> range) {
 		final Cursor be = range.begin;
 		final Cursor en = range.end;
 		ensureCursor(be);
@@ -469,91 +360,61 @@ public class Malax implements Document {
 		return ret.toString();
 	}
 
-	@Override
-	public DocumentAccessor getAccessor() {
-		return new Accessor();
-	}
+	public static class Cursor extends com.mivik.mlexer.Cursor implements Comparable<Cursor> {
+		int line, column;
 
-	class Accessor extends DocumentAccessor {
-		private Cursor C;
-		private int ind;
-
-		Accessor() {
-			this.C = getBeginCursor();
-			this.ind = 0;
+		public Cursor(int line, int col) {
+			this.line = line;
+			this.column = col;
 		}
 
-		Accessor(Cursor cursor, int ind) {
-			this.C = cursor;
-			this.ind = ind;
+		public Cursor(Cursor ori) {
+			this.line = ori.line;
+			this.column = ori.column;
 		}
 
-		@Override
-		public void moveCursor(int x) {
-			this.C = Index2Cursor(x);
-			this.ind = x;
+		public void setLine(int line) {
+			this.line = line;
 		}
 
-		@Override
-		public int getCursor() {
-			return ind;
+		public void setColumn(int col) {
+			this.column = col;
 		}
 
-		@Override
-		public char get() {
-			return charAt(C);
+		public int getLine() {
+			return line;
+		}
+
+		public int getColumn() {
+			return column;
 		}
 
 		@Override
-		public boolean moveBack() {
-			if (Malax.this.moveBack(C)) {
-				--ind;
-				return true;
-			}
-			return false;
+		public Cursor clone() {
+			return new Cursor(this);
 		}
 
 		@Override
-		public boolean moveForward() {
-			if (Malax.this.moveForward(C)) {
-				++ind;
-				return true;
-			}
-			return false;
+		public int compareTo(Cursor t) {
+			if (line != t.line) return Integer.compare(line, t.line);
+			return Integer.compare(column, t.column);
 		}
 
 		@Override
-		public int moveBack(int x) {
-			int ret = Malax.this.moveBack(C, x);
-			ind -= ret;
-			return ret;
+		public boolean equals(Object obj) {
+			if (!(obj instanceof Cursor)) return false;
+			Cursor t = (Cursor) obj;
+			return line == t.line && column == t.column;
 		}
 
 		@Override
-		public int moveForward(int x) {
-			int ret = Malax.this.moveForward(C, x);
-			ind += ret;
-			return ret;
+		public int hashCode() {
+			return line ^ column;
 		}
 
 		@Override
-		public String substring(int st, int en) {
-			return substring(st, en - st);
-		}
-
-		@Override
-		public int length() {
-			return Malax.this.length();
-		}
-
-		@Override
-		public void getChars(int st, int len, char[] dst, int off) {
-			subChars(st, len, dst, off);
-		}
-
-		@Override
-		public DocumentAccessor clone() {
-			return new Accessor(C, ind);
+		public String toString() {
+			return "(" + line + ',' + column + ')';
 		}
 	}
 }
