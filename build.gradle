@@ -20,5 +20,5 @@ jar {
 }
 
 dependencies {
-	implementation 'com.github.Mivik:MLexer:1.0.4'
+	implementation 'com.github.Mivik:MLexer:1.0.5'
 }
