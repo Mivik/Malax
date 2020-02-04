@@ -1,15 +1,24 @@
 package com.mivik.malax;
 
-import static com.mivik.malax.Malax.Cursor;
+import static com.mivik.malax.BaseMalax.Cursor;
 
 public class LineManager {
 	public static final int EXPAND_SIZE = 16;
 
 	public int S;
 	public int[] E = new int[EXPAND_SIZE];
+	private LineChangeListener listener;
 
 	public LineManager() {
 		clear();
+	}
+
+	public LineChangeListener getLineChangeListener() {
+		return listener;
+	}
+
+	public void setLineChangeListener(LineChangeListener listener) {
+		this.listener = listener;
 	}
 
 	public void insertAll(Cursor x, int[] a, int tot, int len) {
@@ -19,14 +28,14 @@ public class LineManager {
 		}
 		int[] dst;
 		if (S + tot >= E.length) {
-			dst = new int[newSize(S + tot)];
+			dst = new int[newSize(S + tot + 1)];
 			System.arraycopy(E, 0, dst, 0, x.line + 1);
 		} else dst = E;
 		for (int i = S; i > x.line; i--) dst[i + tot] = E[i] + len;
 		final int base = E[x.line] + x.column + 1;
 		for (int i = 0; i < tot; i++) dst[x.line + i + 1] = base + a[i];
 		E = dst;
-		S += tot;
+		updateSize(S + tot);
 	}
 
 	public Cursor getBeginCursor() {
@@ -143,8 +152,14 @@ public class LineManager {
 		return E[x + 1] - E[x];
 	}
 
+	public int getTrimmed(int x) {
+		checkBounds(x);
+		if (x == S - 1) return E[x + 1] - E[x];
+		return E[x + 1] - E[x] - 1;
+	}
+
 	public void clear() {
-		S = 0;
+		updateSize(0);
 		E[0] = 0;
 	}
 
@@ -159,7 +174,7 @@ public class LineManager {
 		checkBounds(r);
 		final int len = r - l;
 		tar = E[r + 1] - E[l] - tar;
-		S -= len;
+		updateSize(S - len);
 		for (int i = l + 1; i <= S; i++) E[i] = E[i + len] - tar;
 	}
 
@@ -179,7 +194,8 @@ public class LineManager {
 			dst = new int[E.length + EXPAND_SIZE];
 			System.arraycopy(E, 0, dst, 0, x + 1);
 		} else dst = E;
-		for (int i = ++S; i > x; i--) dst[i] = E[i - 1] + len;
+		updateSize(S + 1);
+		for (int i = S; i > x; i--) dst[i] = E[i - 1] + len;
 		E = dst;
 	}
 
@@ -191,7 +207,7 @@ public class LineManager {
 		checkBounds(x);
 		final int len = E[x + 1] - E[x];
 		for (int i = x + 1; i <= S; i++) E[i] = E[i + 1] - len;
-		--S;
+		updateSize(S - 1);
 	}
 
 	public void removeRange(int l, int r) {
@@ -200,9 +216,8 @@ public class LineManager {
 		checkBounds(r);
 		final int len = E[r + 1] - E[l];
 		final int tar = r - l + 1;
-		S -= r - l;
-		for (int i = l; i <= S; i++) E[i] = E[i + tar] - len;
-		--S;
+		updateSize(S - (r - l + 1));
+		for (int i = l; i <= S + 1; i++) E[i] = E[i + tar] - len;
 	}
 
 	public void trim() {
@@ -220,11 +235,22 @@ public class LineManager {
 		if (x < 0 || x > S) throw new ArrayIndexOutOfBoundsException(x);
 	}
 
+	private void updateSize(int tar) {
+		if (S == tar) return;
+		int ori = S;
+		S = tar;
+		if (listener != null) listener.onLineChanged(this, ori, tar);
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder ret = new StringBuilder("[");
 		for (int i = 0; i < S; i++) ret.append(E[i]).append(", ");
 		ret.append(E[S]).append(']');
 		return ret.toString();
+	}
+
+	public interface LineChangeListener {
+		void onLineChanged(LineManager manager, int ori, int cur);
 	}
 }

@@ -2,18 +2,25 @@ package com.mivik.malax;
 
 import com.mivik.mlexer.JSONLexer;
 import com.mivik.mlexer.MLexer;
+import com.mivik.mlexer.RangeSelection;
 
 import java.util.Random;
 
 public class TestClass {
 	public static void main(String[] args) {
-		Malax malax = new Malax("123\n456");
-		malax.insert(malax.Index2Cursor(1), "78\na23\nb");
+		Malax malax = new Malax(new BaseMalax("d\n"));
+		System.out.println(malax.getMalax().getLineManager());
+		malax.delete(new RangeSelection<>(malax, 1, 2));
+		System.out.println(malax.getMalax().getLineManager());
 		System.out.println(malax);
 	}
 
-	private static void printState(Malax doc) {
+	private static void printState(BaseMalax doc) {
 		MLexer lexer = doc.getLexer();
+		if (lexer == null) {
+			System.out.println("[Null Lexer]");
+			return;
+		}
 		for (int i = 1; i <= lexer.DS[0]; i++)
 			System.out.println(lexer.getTypeName(lexer.D[i]) + ":" + lexer.getTrimmedPartText(i));
 		System.out.println("============");
@@ -22,12 +29,12 @@ public class TestClass {
 	private static void MalaxBenchmark() {
 		final int count = 1024 * 20;
 		long st = System.currentTimeMillis();
-		Malax doc = new Malax("");
+		BaseMalax doc = new BaseMalax("");
 		doc.setLexer(new JSONLexer());
 		Random random = new Random();
 		for (int i = 0; i < count; i++) {
 			int ind = random.nextInt(doc.length() + 1);
-			Malax.Cursor cursor = doc.Index2Cursor(ind);
+			BaseMalax.Cursor cursor = doc.Index2Cursor(ind);
 			if (random.nextInt(8) == 0) doc.insert(cursor, '\n');
 			else if (random.nextInt(4) == 0) doc.delete(cursor);
 			else doc.insert(cursor, (char) (random.nextInt(95) + 32));

@@ -3,22 +3,57 @@ package com.mivik.malax;
 import com.mivik.mlexer.Cursor;
 import com.mivik.mlexer.RangeSelection;
 
-public class UndoableEditable<T extends Cursor> extends Editable<T> {
+import java.util.HashSet;
+import java.util.Set;
+
+public class WrappedEditable<T extends Cursor> extends Editable<T> {
 
 	public static final int MERGE_ACTIONS_INTERVAL = 250;
 
 	protected Editable<T> E;
 	protected EditActionStack A = new EditActionStack();
+	private CursorListener<T> _CursorListener;
+	private boolean _Editable = true;
 
-	public UndoableEditable(Editable<T> editable) {
+	public WrappedEditable(Editable<T> editable) {
 		this.E = editable;
 	}
 
+	public CursorListener<T> getCursorListener() {
+		return _CursorListener;
+	}
+
+	public void setCursorListener(CursorListener<T> listener) {
+		this._CursorListener = listener;
+	}
+
+	public boolean addEditActionListener(EditActionListener listener) {
+		return A.addEditActionListener(listener);
+	}
+
+	public boolean removeEditActionListener(EditActionListener listener) {
+		return A.removeEditActionListener(listener);
+	}
+
+	public void clearEditActionListeners() {
+		A.clearEditActionListeners();
+	}
+
+	public boolean isEditable() {
+		return _Editable;
+	}
+
+	public void setEditable(boolean flag) {
+		this._Editable = flag;
+	}
+
 	public boolean undo() {
+		if (!_Editable) return false;
 		return A.undo();
 	}
 
 	public boolean redo() {
+		if (!_Editable) return false;
 		return A.redo();
 	}
 
@@ -36,32 +71,44 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 
 	@Override
 	public void clear() {
+		if (!_Editable) return;
 		A.addAction(new ClearAction());
 	}
 
 	@Override
-	public void insert(T st, char c) {
-		A.addAction(new InsertCharAction(st, c));
+	public T insert(T st, char c) {
+		if (!_Editable) return (T) st.clone();
+		return A.addAction(new InsertCharAction(st, c)).rig;
 	}
 
 	@Override
-	public void insert(T st, char[] cs, int off, int len) {
-		A.addAction(new InsertCharsAction(st, cs, off, len));
+	public T insert(T st, char[] cs, int off, int len) {
+		if (!_Editable) return (T) st.clone();
+		return A.addAction(new InsertCharsAction(st, cs, off, len)).rig;
 	}
 
 	@Override
 	public void delete(T en) {
+		if (!_Editable) return;
 		A.addAction(new DeleteCharAction(en));
 	}
 
 	@Override
 	public void delete(RangeSelection<T> sel) {
+		if (!_Editable) return;
 		A.addAction(new DeleteCharsAction(sel));
 	}
 
 	@Override
-	public void replace(RangeSelection<T> sel, char[] cs, int off, int len) {
-		A.addAction(new ReplaceAction(sel, cs, off, len));
+	public T replace(RangeSelection<T> sel, char[] cs, int off, int len) {
+		if (!_Editable) return (T) sel.end.clone();
+		return A.addAction(new ReplaceAction(sel, cs, off, len)).nsel.end;
+	}
+
+	@Override
+	public void setText(char[] cs, int off, int len) {
+		if (!_Editable) return;
+		A.addAction(new SetTextAction(cs, off, len));
 	}
 
 	@Override
@@ -120,11 +167,6 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 	}
 
 	@Override
-	public void setText(char[] cs, int off, int len) {
-		A.addAction(new SetTextAction(cs, off, len));
-	}
-
-	@Override
 	public char[] toCharArray() {
 		return E.toCharArray();
 	}
@@ -138,7 +180,7 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 	}
 
 	public class ClearAction implements EditAction {
-		private char[] cs;
+		public char[] cs;
 
 		public ClearAction() {
 			cs = E.toCharArray();
@@ -147,19 +189,21 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 		@Override
 		public void undo() {
 			E.insert(getBeginCursor(), cs, 0, cs.length);
+			updateCursor(E.getEndCursor());
 		}
 
 		@Override
 		public void redo() {
 			E.clear();
+			updateCursor(E.getEndCursor());
 		}
 	}
 
 	public static class MergedAction implements EditAction {
 		public static final int MERGE_BUFFER = 16;
 
-		private EditAction[] actions;
-		private int pos;
+		public EditAction[] actions;
+		public int pos;
 
 		public MergedAction(EditAction[] actions) {
 			this.actions = actions;
@@ -191,7 +235,7 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 	}
 
 	public class SetTextAction implements EditAction {
-		private char[] ocs, ncs;
+		public char[] ocs, ncs;
 
 		public SetTextAction(char[] cs, int off, int len) {
 			ocs = E.toCharArray();
@@ -203,23 +247,24 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 		public void undo() {
 			E.clear();
 			E.insert(E.getBeginCursor(), ocs);
+			updateCursor(E.getEndCursor());
 		}
 
 		@Override
 		public void redo() {
 			E.clear();
 			E.insert(E.getBeginCursor(), ncs);
+			updateCursor(E.getEndCursor());
 		}
 	}
 
 	public class InsertCharsAction implements EditAction {
-		private T lef, rig;
-		private char[] cs;
+		public T lef, rig;
+		public char[] cs;
 
 		public InsertCharsAction(T cursor, char[] cs, int off, int len) {
 			this.lef = (T) cursor.clone();
-			this.rig = (T) cursor.clone();
-			E.moveForward(rig, len);
+			this.rig = null;
 			this.cs = new char[len];
 			System.arraycopy(cs, off, this.cs, 0, len);
 		}
@@ -227,17 +272,19 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 		@Override
 		public void undo() {
 			E.delete(rig, cs.length);
+			updateCursor(lef);
 		}
 
 		@Override
 		public void redo() {
-			E.insert(lef, cs, 0, cs.length);
+			rig = E.insert(lef, cs, 0, cs.length);
+			updateCursor(rig);
 		}
 	}
 
 	public class DeleteCharsAction implements EditAction {
-		private RangeSelection<T> sel;
-		private char[] cs;
+		public RangeSelection<T> sel;
+		public char[] cs;
 
 		public DeleteCharsAction(RangeSelection<T> sel) {
 			this.sel = sel.clone();
@@ -247,39 +294,42 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 		@Override
 		public void undo() {
 			E.insert(sel.begin, cs, 0, cs.length);
+			updateCursor(sel.end);
 		}
 
 		@Override
 		public void redo() {
 			E.delete(sel);
+			updateCursor(sel.begin);
 		}
 	}
 
 	public class InsertCharAction implements EditAction {
-		private T lef, rig;
-		private char ch;
+		public T lef, rig;
+		public char ch;
 
 		public InsertCharAction(T cursor, char ch) {
 			this.lef = (T) cursor.clone();
-			this.rig = (T) cursor.clone();
-			E.moveForward(rig);
+			this.rig = null;
 			this.ch = ch;
 		}
 
 		@Override
 		public void undo() {
 			E.delete(rig);
+			updateCursor(lef);
 		}
 
 		@Override
 		public void redo() {
-			E.insert(lef, ch);
+			rig = E.insert(lef, ch);
+			updateCursor(rig);
 		}
 	}
 
 	public class DeleteCharAction implements EditAction {
-		private T lef, rig;
-		private char ch;
+		public T lef, rig;
+		public char ch;
 
 		public DeleteCharAction(T cursor) {
 			this.lef = (T) cursor.clone();
@@ -291,24 +341,25 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 		@Override
 		public void undo() {
 			E.insert(lef, ch);
+			updateCursor(rig);
 		}
 
 		@Override
 		public void redo() {
 			E.delete(rig);
+			updateCursor(lef);
 		}
 	}
 
 	public class ReplaceAction implements EditAction {
-		private RangeSelection<T> osel;
-		private RangeSelection<T> nsel;
-		private char[] ocs;
-		private char[] ncs;
+		public RangeSelection<T> osel;
+		public RangeSelection<T> nsel;
+		public char[] ocs;
+		public char[] ncs;
 
 		public ReplaceAction(RangeSelection<T> sel, char[] cs, int off, int len) {
 			this.osel = sel.clone();
 			this.nsel = new RangeSelection<>(sel.begin, sel.begin);
-			E.moveForward(nsel.end, len);
 			this.ocs = E.subChars(osel);
 			this.ncs = new char[len];
 			System.arraycopy(cs, off, this.ncs, 0, len);
@@ -316,15 +367,29 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 
 		@Override
 		public void undo() {
-			E.delete(nsel);
-			E.insert(osel.begin, ocs);
+			E.replace(nsel, ocs);
+			updateCursor(osel.end);
 		}
 
 		@Override
 		public void redo() {
-			E.delete(osel);
-			E.insert(nsel.begin, ncs);
+			nsel.end = E.replace(osel, ncs);
+			updateCursor(nsel.end);
 		}
+	}
+
+	private void updateCursor(T x) {
+		if (_CursorListener != null) _CursorListener.onCursorMoved(x);
+	}
+
+	public interface CursorListener<T extends Cursor> {
+		void onCursorMoved(T cursor);
+	}
+
+	public interface EditActionListener {
+		boolean beforeAction(EditAction action);
+
+		void afterAction(EditAction action);
 	}
 
 	public interface EditAction {
@@ -338,6 +403,7 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 		private int tot;
 		private int cnt;
 		private long LastActionTime = 0;
+		private final Set<EditActionListener> listeners = new HashSet<>();
 
 		EditActionStack() {
 			this(64);
@@ -345,6 +411,24 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 
 		EditActionStack(int maxSize) {
 			setMaxSize(maxSize);
+		}
+
+		public boolean addEditActionListener(EditActionListener listener) {
+			synchronized (listeners) {
+				return this.listeners.add(listener);
+			}
+		}
+
+		public boolean removeEditActionListener(EditActionListener listener) {
+			synchronized (listeners) {
+				return this.listeners.remove(listener);
+			}
+		}
+
+		public void clearEditActionListeners() {
+			synchronized (listeners) {
+				listeners.clear();
+			}
 		}
 
 		public void setMaxSize(int size) {
@@ -360,7 +444,16 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 			return arr.length;
 		}
 
-		public void addAction(EditAction action) {
+		public <T extends EditAction> T addAction(T action) {
+			synchronized (listeners) {
+				boolean has = false;
+				for (EditActionListener listener : listeners) has |= listener.beforeAction(action);
+				if (has) return action;
+			}
+			action.redo();
+			synchronized (listeners) {
+				for (EditActionListener listener : listeners) listener.afterAction(action);
+			}
 			long t = System.currentTimeMillis();
 			long cur = t - LastActionTime;
 			LastActionTime = t;
@@ -368,13 +461,12 @@ public class UndoableEditable<T extends Cursor> extends Editable<T> {
 				EditAction lac = getLastAction();
 				if (lac != null) {
 					setLastAction(mergeActions(lac, action));
-					action.redo();
-					return;
+					return action;
 				}
 			}
 			arr[tot++] = action;
-			action.redo();
 			if (tot == arr.length) tot = 0;
+			return action;
 		}
 
 		public boolean undo() {

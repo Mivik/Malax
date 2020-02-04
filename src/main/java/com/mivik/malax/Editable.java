@@ -13,16 +13,16 @@ public abstract class Editable<T extends Cursor> extends Document<T> {
 
 	public abstract void clear();
 
-	public abstract void insert(T st, char c);
+	public abstract T insert(T st, char c);
 
-	public abstract void insert(T st, char[] cs, int off, int len);
+	public abstract T insert(T st, char[] cs, int off, int len);
 
-	public final void insert(T st, char[] cs) {
-		insert(st, cs, 0, cs.length);
+	public final T insert(T st, char[] cs) {
+		return insert(st, cs, 0, cs.length);
 	}
 
-	public final void insert(T st, String s) {
-		insert(st, s.toCharArray(), 0, s.length());
+	public final T insert(T st, String s) {
+		return insert(st, s.toCharArray(), 0, s.length());
 	}
 
 	public abstract void delete(T en);
@@ -33,21 +33,21 @@ public abstract class Editable<T extends Cursor> extends Document<T> {
 		delete(fromEnd(en, len));
 	}
 
-	public final void replace(RangeSelection<T> sel, char c) {
-		replace(sel, new char[]{c}, 0, 1);
+	public final T replace(RangeSelection<T> sel, char c) {
+		return replace(sel, new char[]{c}, 0, 1);
 	}
 
-	public final void replace(RangeSelection<T> sel, char[] cs) {
-		replace(sel, cs, 0, cs.length);
+	public final T replace(RangeSelection<T> sel, char[] cs) {
+		return replace(sel, cs, 0, cs.length);
 	}
 
-	public final void replace(RangeSelection<T> sel, String s) {
-		replace(sel, s.toCharArray(), 0, s.length());
+	public final T replace(RangeSelection<T> sel, String s) {
+		return replace(sel, s.toCharArray(), 0, s.length());
 	}
 
-	public void replace(RangeSelection<T> sel, char[] cs, int off, int len) {
+	public T replace(RangeSelection<T> sel, char[] cs, int off, int len) {
 		delete(sel);
-		insert(sel.begin, cs, off, len);
+		return insert(sel.begin, cs, off, len);
 	}
 
 	public final void setText(String s) {
