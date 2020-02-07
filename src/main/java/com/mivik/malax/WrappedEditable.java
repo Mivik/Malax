@@ -84,6 +84,7 @@ public class WrappedEditable<T extends Cursor> extends Editable<T> {
 	@Override
 	public T insert(T st, char[] cs, int off, int len) {
 		if (!_Editable) return (T) st.clone();
+		if (len == 1) return insert(st, cs[off]);
 		return A.addAction(new InsertCharsAction(st, cs, off, len)).rig;
 	}
 
@@ -169,6 +170,10 @@ public class WrappedEditable<T extends Cursor> extends Editable<T> {
 	@Override
 	public char[] toCharArray() {
 		return E.toCharArray();
+	}
+
+	public Editable<T> unwrap() {
+		return E;
 	}
 
 	private MergedAction mergeActions(EditAction ori, EditAction ac) {
@@ -387,9 +392,9 @@ public class WrappedEditable<T extends Cursor> extends Editable<T> {
 	}
 
 	public interface EditActionListener {
-		boolean beforeAction(EditAction action);
+		boolean beforeAction(WrappedEditable wrappedEditable, EditAction action);
 
-		void afterAction(EditAction action);
+		void afterAction(WrappedEditable wrappedEditable, EditAction action);
 	}
 
 	public interface EditAction {
@@ -447,12 +452,13 @@ public class WrappedEditable<T extends Cursor> extends Editable<T> {
 		public <T extends EditAction> T addAction(T action) {
 			synchronized (listeners) {
 				boolean has = false;
-				for (EditActionListener listener : listeners) has |= listener.beforeAction(action);
+				for (EditActionListener listener : listeners)
+					has |= listener.beforeAction(WrappedEditable.this, action);
 				if (has) return action;
 			}
 			action.redo();
 			synchronized (listeners) {
-				for (EditActionListener listener : listeners) listener.afterAction(action);
+				for (EditActionListener listener : listeners) listener.afterAction(WrappedEditable.this, action);
 			}
 			long t = System.currentTimeMillis();
 			long cur = t - LastActionTime;
