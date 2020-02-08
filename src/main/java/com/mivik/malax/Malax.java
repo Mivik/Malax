@@ -77,4 +77,12 @@ public class Malax extends WrappedEditable<BaseMalax.Cursor> {
 		A = another.A;
 		E = another.E;
 	}
+
+	public void setContentChangeListener(BaseMalax.ContentChangeListener listener) {
+		getMalax().setContentChangeListener(listener);
+	}
+
+	public BaseMalax.ContentChangeListener getContentChangeListener() {
+		return getMalax().getContentChangeListener();
+	}
 }

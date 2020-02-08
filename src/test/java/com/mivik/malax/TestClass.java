@@ -2,16 +2,32 @@ package com.mivik.malax;
 
 import com.mivik.mlexer.JSONLexer;
 import com.mivik.mlexer.MLexer;
-import com.mivik.mlexer.RangeSelection;
 
 import java.util.Random;
 
 public class TestClass {
 	public static void main(String[] args) {
-		Malax malax = new Malax(new BaseMalax("d\n"));
-		System.out.println(malax.getMalax().getLineManager());
-		malax.delete(new RangeSelection<>(malax, 1, 2));
-		System.out.println(malax.getMalax().getLineManager());
+		Malax malax = new Malax(new BaseMalax("d\n12213"));
+		malax.setContentChangeListener(new BaseMalax.ContentChangeListener() {
+			@Override
+			public void onExpand(int st, int en) {
+				System.out.println("expand: " + st + " " + en);
+			}
+
+			@Override
+			public void onMerge(int st, int en) {
+				System.out.println("merge: " + st + " " + en);
+			}
+
+			@Override
+			public void onLineUpdated(int x) {
+				System.out.println("update: " + x);
+			}
+		});
+		LineManager line = malax.getLineManager();
+		malax.delete(malax.Index2Cursor(3), 2);
+		malax.insert(malax.Index2Cursor(1), "\n\n");
+		malax.delete(malax.Index2Cursor(3), 2);
 		System.out.println(malax);
 	}
 

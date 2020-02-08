@@ -12,6 +12,7 @@ public class BaseMalax extends Editable<BaseMalax.Cursor> {
 	protected LineManager L = new LineManager();
 	protected char[][] S = new char[LINE_BUFFER_SIZE][];
 	protected MLexer M;
+	protected ContentChangeListener listener;
 
 	public BaseMalax() {
 		this(null, 0, 0);
@@ -29,6 +30,14 @@ public class BaseMalax extends Editable<BaseMalax.Cursor> {
 
 	public BaseMalax(CharSequence cs) {
 		this(Editable.CharSequence2CharArray(cs, 0, cs.length()), 0, cs.length());
+	}
+
+	public void setContentChangeListener(ContentChangeListener listener) {
+		this.listener = listener;
+	}
+
+	public ContentChangeListener getContentChangeListener() {
+		return listener;
 	}
 
 	public char[][] getRawChars() {
@@ -164,10 +173,12 @@ public class BaseMalax extends Editable<BaseMalax.Cursor> {
 			ensureStringCapture(line, col + nxtLen);
 			System.arraycopy(S[line + 1], 0, S[line], col, nxtLen);
 			for (int i = line + 1; i < L.size(); i++) S[i] = S[i + 1];
+			if (listener != null) listener.onMerge(line, line + 1);
 		} else {
 			L.set(line, oriLen - 1);
 			char[] s = S[line];
 			for (int i = col + 1; i < oriLen; i++) s[i - 1] = s[i];
+			if (listener != null) listener.onLineUpdated(line);
 		}
 		if (M != null) {
 			M.onTextReferenceUpdate();
@@ -186,6 +197,7 @@ public class BaseMalax extends Editable<BaseMalax.Cursor> {
 			L.set(st.line, enLen - len);
 			char[] s = S[st.line];
 			for (int i = en.column; i < enLen; i++) s[i - len] = s[i];
+			if (listener != null) listener.onLineUpdated(st.line);
 		} else {
 			final int nl = st.column + enLen - en.column;
 			len = L.E[en.line + 1] - L.E[st.line] - nl;
@@ -194,6 +206,7 @@ public class BaseMalax extends Editable<BaseMalax.Cursor> {
 			System.arraycopy(S[en.line], en.column, S[st.line], st.column, enLen - en.column);
 			int off = en.line - st.line;
 			for (int i = st.line + 1; i < L.size(); i++) S[i] = S[i + off];
+			if (listener != null) listener.onMerge(st.line, en.line);
 		}
 		if (M != null) {
 			M.onTextReferenceUpdate();
@@ -219,6 +232,7 @@ public class BaseMalax extends Editable<BaseMalax.Cursor> {
 			S[x.line][col] = '\n';
 			++ret.line;
 			ret.column = 0;
+			if (listener != null) listener.onExpand(x.line, x.line + 1);
 		} else {
 			L.set(x.line, ++len);
 			ensureStringCapture(x.line, len);
@@ -226,6 +240,7 @@ public class BaseMalax extends Editable<BaseMalax.Cursor> {
 			for (int i = len - 1; i > col; i--) s[i] = s[i - 1];
 			s[col] = c;
 			++ret.column;
+			if (listener != null) listener.onLineUpdated(x.line);
 		}
 		if (M != null) {
 			M.onTextReferenceUpdate();
@@ -261,6 +276,7 @@ public class BaseMalax extends Editable<BaseMalax.Cursor> {
 			for (i = oriLen + len - 1; i > col + len - 1; i--) s[i] = s[i - len];
 			System.arraycopy(cs, 0, s, col, len);
 			ret.column += len;
+			if (listener != null) listener.onLineUpdated(line);
 		} else {
 			ensureLineCapture(L.size()); // 现在的L是已经插入好了的，所以size是新的size
 			for (i = L.size() - 1; i > line + tot; i--) S[i] = S[i - tot];
@@ -278,6 +294,7 @@ public class BaseMalax extends Editable<BaseMalax.Cursor> {
 			}
 			ret.line += tot;
 			ret.column = len - d[tot - 1] - 1;
+			if (listener != null) listener.onExpand(line, line + tot);
 		}
 		if (M != null) {
 			M.onTextReferenceUpdate();
@@ -409,5 +426,13 @@ public class BaseMalax extends Editable<BaseMalax.Cursor> {
 		public String toString() {
 			return "(" + line + ',' + column + ')';
 		}
+	}
+
+	public interface ContentChangeListener {
+		void onExpand(int st, int en);
+
+		void onMerge(int st, int en);
+
+		void onLineUpdated(int x);
 	}
 }
