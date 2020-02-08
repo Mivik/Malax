@@ -19,6 +19,14 @@ public class WrappedEditable<T extends Cursor> extends Editable<T> {
 		this.E = editable;
 	}
 
+	public boolean isRecordAction() {
+		return A.isRecordAction();
+	}
+
+	public void setRecordAction(boolean flag) {
+		A.setRecordAction(flag);
+	}
+
 	public CursorListener<T> getCursorListener() {
 		return _CursorListener;
 	}
@@ -409,6 +417,7 @@ public class WrappedEditable<T extends Cursor> extends Editable<T> {
 		private int cnt;
 		private long LastActionTime = 0;
 		private final Set<EditActionListener> listeners = new HashSet<>();
+		private boolean _RecordAction = true;
 
 		EditActionStack() {
 			this(64);
@@ -416,6 +425,15 @@ public class WrappedEditable<T extends Cursor> extends Editable<T> {
 
 		EditActionStack(int maxSize) {
 			setMaxSize(maxSize);
+		}
+
+		public boolean isRecordAction() {
+			return _RecordAction;
+		}
+
+		public void setRecordAction(boolean flag) {
+			if (this._RecordAction == flag) return;
+			if (!(this._RecordAction = flag)) clear();
 		}
 
 		public boolean addEditActionListener(EditActionListener listener) {
@@ -460,6 +478,7 @@ public class WrappedEditable<T extends Cursor> extends Editable<T> {
 			synchronized (listeners) {
 				for (EditActionListener listener : listeners) listener.afterAction(WrappedEditable.this, action);
 			}
+			if (!_RecordAction) return action;
 			long t = System.currentTimeMillis();
 			long cur = t - LastActionTime;
 			LastActionTime = t;
@@ -476,6 +495,7 @@ public class WrappedEditable<T extends Cursor> extends Editable<T> {
 		}
 
 		public boolean undo() {
+			if (!_RecordAction) return false;
 			if (cnt >= arr.length) return false;
 			if (tot == 0) tot = arr.length;
 			tot--;
@@ -489,6 +509,7 @@ public class WrappedEditable<T extends Cursor> extends Editable<T> {
 		}
 
 		public boolean redo() {
+			if (!_RecordAction) return false;
 			if (cnt == 0) return false;
 			if (arr[tot] == null) return false;
 			arr[tot].redo();
@@ -498,6 +519,7 @@ public class WrappedEditable<T extends Cursor> extends Editable<T> {
 		}
 
 		public EditAction getLastAction() {
+			if (!_RecordAction) return null;
 			if (cnt >= arr.length) return null;
 			int pp = tot;
 			if (pp == 0) pp = arr.length;
@@ -505,6 +527,7 @@ public class WrappedEditable<T extends Cursor> extends Editable<T> {
 		}
 
 		public void setLastAction(EditAction action) {
+			if (!_RecordAction) return;
 			if (cnt >= arr.length) return;
 			int pp = tot;
 			if (pp == 0) pp = arr.length;
