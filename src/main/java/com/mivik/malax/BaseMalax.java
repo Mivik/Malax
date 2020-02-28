@@ -6,6 +6,8 @@ import com.mivik.mlexer.RangeSelection;
 import java.nio.CharBuffer;
 import java.util.Arrays;
 
+import static com.mivik.mlexer.MLexer.newCapacity;
+
 public class BaseMalax extends Editable<BaseMalax.Cursor> {
 	public static final int LINE_BUFFER_SIZE = 8, COLUMN_BUFFER_SIZE = 8;
 
@@ -322,17 +324,12 @@ public class BaseMalax extends Editable<BaseMalax.Cursor> {
 
 	protected static int[] ensureArrayCapture(int[] a, int len) {
 		if (a.length >= len) return a;
-		int[] ret = new int[((len - a.length - 1) / LINE_BUFFER_SIZE + 1) * LINE_BUFFER_SIZE + a.length];
-		System.arraycopy(a, 0, ret, 0, a.length);
-		return ret;
+		return Arrays.copyOf(a, newCapacity(a.length, len));
 	}
 
 	protected void ensureLineCapture(int len) {
 		if (S.length >= len) return;
-		int nl = ((len - S.length - 1) / COLUMN_BUFFER_SIZE + 1) * COLUMN_BUFFER_SIZE + S.length;
-		char[][] ori = S;
-		S = new char[nl][];
-		System.arraycopy(ori, 0, S, 0, ori.length);
+		S = Arrays.copyOf(S, newCapacity(S.length, len));
 	}
 
 	protected void ensureStringCapture(int line, int len) {
@@ -341,10 +338,7 @@ public class BaseMalax extends Editable<BaseMalax.Cursor> {
 			return;
 		}
 		if (S[line].length >= len) return;
-		int nl = ((len - S[line].length - 1) / COLUMN_BUFFER_SIZE + 1) * COLUMN_BUFFER_SIZE + S[line].length;
-		char[] ori = S[line];
-		S[line] = new char[nl];
-		System.arraycopy(ori, 0, S[line], 0, ori.length);
+		S[line] = Arrays.copyOf(S[line], newCapacity(S[line].length, len));
 	}
 
 	protected void ensureRange(RangeSelection<Cursor> range) {

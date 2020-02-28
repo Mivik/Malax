@@ -85,4 +85,10 @@ public class Malax extends WrappedEditable<BaseMalax.Cursor> {
 	public BaseMalax.ContentChangeListener getContentChangeListener() {
 		return getMalax().getContentChangeListener();
 	}
+
+	@Override
+	public void delete(BaseMalax.Cursor en) {
+		if (en.line==0&&en.column==0) return;
+		super.delete(en);
+	}
 }
