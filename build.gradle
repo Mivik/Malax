@@ -1,5 +1,5 @@
 plugins {
-	id 'java'
+	id 'java-library'
 }
 
 group 'com.mivik'
@@ -20,6 +20,5 @@ jar {
 }
 
 dependencies {
-//	implementation 'com.github.Mivik:MLexer:1.0.7'
-	implementation project(':MLexer')
+	api "com.github.Mivik:MLexer:1.0.8"
 }
